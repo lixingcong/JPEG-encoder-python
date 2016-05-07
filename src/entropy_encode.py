@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-07 14:22:44 >
+# Time-stamp: < entropy_encode.py 2016-05-07 15:57:40 >
 """
 熵编码
 """ 
 
 import numpy as np
-from dc_ac_encode import calc_need_bits
 
 # 色差交流系数，课本P132
 # luminance_table={
 # }
 
 # 亮度交流系数，课本P132
-chrominance_table={
+huffman_AC_chrominance_table={
 	"0/1":"00",
 	"0/2":"01",
 	"0/3":"100",
@@ -61,12 +60,26 @@ chrominance_table={
 	"4/1":"111011"
 }
 
+huffman_DC_chrominance_table = {
+	0: "00",
+	1: "010",
+	2: "011",
+	3: "100",
+	4: "101",
+	5: "110",
+	6: "1100",
+	7: "11110",
+	8: "111110",
+	9: "1111110",
+	10: "11111110",
+	11: "111111110"
+}
+
 # 计算幅值，课本P133
-def calc_amplitude(input_num):
+def calc_amplitude(input_num, need_bit, mode="AC"):
 	num = abs(input_num) & 0xffff
-	if num == 0:return
-	# 计算位长
-	need_bit = calc_need_bits(num)
+	if mode == 'DC' and input_num == 0:
+		return "0"
 	index = 0
 	output_string = ""
 	# 正数
@@ -85,14 +98,21 @@ def calc_amplitude(input_num):
 	return output_string
 		
 def get_entropy_encode(input_list):
-	pass
+	output_list = []
+	# DC 编码
+	dc_bit = input_list[0][0]
+	dc_amp = input_list[0][1]
+	(dc_bit, dc_amp) = (huffman_DC_chrominance_table[dc_bit], calc_amplitude(dc_amp, dc_bit, "DC"))
+	insert_item = (dc_bit, dc_amp)
+	output_list.append(insert_item)
+
+	return output_list
 
 def test():
 	# 测试数据，来自P130上方
-	test_list = [(4, 15), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
-	while True:
-		ii = input("input a num: ")
-		print calc_amplitude(ii)
+	test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
+	ll = get_entropy_encode(test_list)
+	for i in ll:print i
 
 if __name__ == '__main__':
 	test()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-07 12:50:13 >
+# Time-stamp: < dc_ac_encode.py 2016-05-07 15:48:59 >
 """
 DC AC系数的编码
 """ 
@@ -10,6 +10,7 @@ import numpy as np
 # 位长的计算
 def calc_need_bits(input_num):
 	num = abs(input_num)
+	# 注意：直流分量才允许input_num=0，直流系数中不存在0
 	if num == 0:
 		return 0
 	returnValue = 1
