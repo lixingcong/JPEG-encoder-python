@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-07 12:35:23 >
+# Time-stamp: < dc_ac_encode.py 2016-05-07 12:47:35 >
 """
 DC AC系数的编码
 """ 
@@ -50,19 +50,29 @@ def ac_encode(input_list):
 		current_num = lite_list[index]
 		# 本次REL码字
 		this_round = [zero_counter, calc_need_bits(current_num), current_num]
-		output_list.append(tuple(this_round))
+		yield tuple(this_round)
+		# output_list.append(tuple(this_round))
 		index += 1
-	return output_list
+
 	
 def DC_AC_encode(input_list,previous_DC_value):
-	pass
+	output_list = []
+	# 直流编码
+	(dc_bit, dc) = dc_encode(input_list[0], previous_DC_value)
+	dc_value = (dc_bit, dc)
+	output_list.append(dc_value)
+	# 交流编码
+	ac_values = ac_encode(input_list[1:])
+	for ac_value in ac_values:
+		output_list.append(ac_value)
+	# 无振幅
+	EOC = (0, 0)
+	output_list.append(EOC)
+	return output_list
 
 def test():
-	print test_list
-	# print "after pop"
-	s = ac_encode(test_list[1:])
-	for i in s:print i
-	
+	encoded = DC_AC_encode(test_list, 0)
+	for i in encoded:print i
 
 if __name__ == '__main__':
 	test()
