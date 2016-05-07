@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-07 13:58:13 >
+# Time-stamp: < entropy_encode.py 2016-05-07 14:22:44 >
 """
 熵编码
 """ 
 
 import numpy as np
+from dc_ac_encode import calc_need_bits
 
 # 色差交流系数，课本P132
 # luminance_table={
@@ -60,16 +61,38 @@ chrominance_table={
 	"4/1":"111011"
 }
 
-def get_amplitude(input_num):
-	pass
+# 计算幅值，课本P133
+def calc_amplitude(input_num):
+	num = abs(input_num) & 0xffff
+	if num == 0:return
+	# 计算位长
+	need_bit = calc_need_bits(num)
+	index = 0
+	output_string = ""
+	# 正数
+	if  input_num >= 0:
+		while index < need_bit:
+			this_bit = "1" if ((num >> index) & 0x1) else "0"
+			output_string = this_bit + output_string
+			index += 1
+	# 负数
+	else:
+		while index < need_bit:
+			this_bit = "0" if ((num >> index) & 0x1) else "1"
+			output_string = this_bit + output_string
+			index += 1
 
+	return output_string
+		
 def get_entropy_encode(input_list):
 	pass
 
 def test():
 	# 测试数据，来自P130上方
 	test_list = [(4, 15), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
-	pass
+	while True:
+		ii = input("input a num: ")
+		print calc_amplitude(ii)
 
 if __name__ == '__main__':
 	test()
