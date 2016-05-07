@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < quantize.py 2016-05-07 08:12:19 >
+# Time-stamp: < quantize.py 2016-05-07 08:35:45 >
 """
 量化
 """ 
 
 import numpy as np
 
+# 重复使用的矩阵，返回结果
+output_table=np.zeros(64,dtype=np.float64).reshape(8,8)
 
 # 色差量化矩阵，课本P125
 luminance_table=np.array([
@@ -30,12 +32,29 @@ chrominance_table=np.array([
 	[99,99,99,99,99,99,99,99],
 	[99,99,99,99,99,99,99,99],
 ])
-
-def get_quantisation(input_number,u,v):
-	pass
+# 测试矩阵
+test_table=np.array([
+	[235.6, -1, -12.1, -5.2, 2.1, -1.7, -2.7, 1.3],
+	[-22.6, -17.5, -6.2, -3.2, -2.9, -0.1, -0.4, -1.2],
+	[-10.9, -9.3, -1.6, 1.5, 0.2, 0.9, -0.6, -0.1],
+	[-7.1, -1.9, 0.2, 1.5, -0.9, -0.1, 0, 0.3],
+	[-0.6, -0.8, 1.5, 1.6, -0.1, -0.7, 0.6, 1.3],
+	[1.8, -0.2, 1.6, -0.3, -0.8, 1.5, 1.0, -1.0],
+	[-1.3, -0.4, -0.3, -1.5, -0.5, 1.7, 1.1, -0.8],
+	[-2.6, 1.6, -3.8, -1.8, 1.9, 1.2, -0.6, -0.4]
+])
+def get_quantisation(input_matrix, mode):
+	global chrominance_table, luminance_table, output_table
+	if mode == 'luminance':
+		table = luminance_table
+	if mode == 'chrominance':
+		table = chrominance_table		
+	for u, v in [(u, v) for u in xrange(8) for v in xrange(8)]:
+		output_table[u, v] = round(input_matrix[u, v] / table[u, v])
+	return output_table
 
 def test():
-	pass
+	print get_quantisation(test_table, 'luminance')
 
 if __name__ == '__main__':
 	test()

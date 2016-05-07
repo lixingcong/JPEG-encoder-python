@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dct.py 2016-05-07 08:14:47 >
+# Time-stamp: < dct.py 2016-05-07 08:19:25 >
 """
 离散余弦变换
 """ 
@@ -78,12 +78,15 @@ def test():
 	# 余弦变换
 	DCT_table=forward_dct(test_table-128)
 	print "Forward-DCT"
-	print DCT_table
+	for x in xrange(8):
+		for y in xrange(8):
+			print "(%d,%d) %.2f"%(x,y,DCT_table[x,y])
+	return
 	print '-'*10
 	# 余弦逆变换
 	print "Inverse-DCT"
 	IDCT_table=inverse_dct(DCT_table)
-	print IDCT_table
+	print IDCT_table+128
 
 if __name__ == '__main__':
 	test()
