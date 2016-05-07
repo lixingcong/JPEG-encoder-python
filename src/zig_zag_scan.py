@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < zig_zag_scan.py 2016-05-07 10:24:28 >
+# Time-stamp: < zig_zag_scan.py 2016-05-07 11:24:29 >
 """
 Z字形的扫描,zig-zag scan
 """ 
@@ -50,7 +50,7 @@ def get_seq_1x64(input_matrix, seq_dict):
 	list_DCT = []
 	for i in xrange(64):
 		order = seq_dict[i]
-		list_DCT.append(input_matrix[order / 8, order % 8])
+		list_DCT.append(int(input_matrix[order / 8, order % 8]))
 	return list_DCT
 
 # 把1x64的列表转成8x8矩阵
