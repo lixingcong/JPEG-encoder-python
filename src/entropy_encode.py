@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-07 13:51:43 >
+# Time-stamp: < entropy_encode.py 2016-05-07 13:58:13 >
 """
 熵编码
 """ 
@@ -59,3 +59,17 @@ chrominance_table={
 	
 	"4/1":"111011"
 }
+
+def get_amplitude(input_num):
+	pass
+
+def get_entropy_encode(input_list):
+	pass
+
+def test():
+	# 测试数据，来自P130上方
+	test_list = [(4, 15), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
+	pass
+
+if __name__ == '__main__':
+	test()
