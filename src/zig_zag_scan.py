@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < zig_zag_scan.py 2016-05-07 09:48:52 >
+# Time-stamp: < zig_zag_scan.py 2016-05-07 10:00:14 >
 """
 Z字形的扫描,zig-zag scan
 """ 
@@ -54,19 +54,24 @@ def get_seq_1x64(input_matrix, seq_dict):
 
 def restore_matrix_from_1x64(input_list, seq_dict):
 	output_matrix = np.zeros(64,dtype=np.uint8).reshape(8,8)
-	for i in xrange(64):
-		order = seq_dict[i]
-		output_matrix[order / 8, order % 8] = input_list[i]
+	for i,j in [(i,j) for i in xrange(8) for j in xrange(8)]:
+		order = seq_dict[8 * i + j]
+		output_matrix[i, j] = input_list[order]
 	return output_matrix
 
 def test():
+	print "original table:"
+	print test_table
+	
 	dict_forward = generate_dict('forward')
 	list_DCT_forward = get_seq_1x64(test_table, dict_forward)
+	print "forward:"
+	print list_DCT_forward
+	
+	print "backward:"
 	dict_backward = generate_dict('backward')
-	for i in xrange(64):
-		print "forward: %d->%d backward: %d->%d" % (i, dict_forward[i], i, dict_backward[i]) 
-	# np_DCT_backward = restore_matrix_from_1x64(list_DCT_forward, dict_backward)
-	# print np_DCT_backward
+	np_DCT_backward = restore_matrix_from_1x64(list_DCT_forward, dict_backward)
+	print np_DCT_backward
 	
 if __name__ == '__main__':
 	test()
