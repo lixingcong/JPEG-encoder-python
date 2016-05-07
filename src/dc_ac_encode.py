@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-07 12:47:35 >
+# Time-stamp: < dc_ac_encode.py 2016-05-07 12:50:13 >
 """
 DC AC系数的编码
 """ 
 
 import numpy as np
-
-# 测试矩阵，课本P129 "量化矩阵"转化为1x64列表
-test_list = [15, 0, -2, -1, -1, -1, 0, 0, -1]
-# 补零至长度64
-for i in xrange(55):test_list.append(0)
 
 # 位长的计算
 def calc_need_bits(input_num):
@@ -50,8 +45,8 @@ def ac_encode(input_list):
 		current_num = lite_list[index]
 		# 本次REL码字
 		this_round = [zero_counter, calc_need_bits(current_num), current_num]
+		# 生成器yeild
 		yield tuple(this_round)
-		# output_list.append(tuple(this_round))
 		index += 1
 
 	
@@ -71,6 +66,10 @@ def DC_AC_encode(input_list,previous_DC_value):
 	return output_list
 
 def test():
+	# 测试矩阵，课本P129 "量化矩阵"转化为1x64列表
+	test_list = [15, 0, -2, -1, -1, -1, 0, 0, -1]
+	# 补零至长度64
+	for i in xrange(55):test_list.append(0)
 	encoded = DC_AC_encode(test_list, 0)
 	for i in encoded:print i
 

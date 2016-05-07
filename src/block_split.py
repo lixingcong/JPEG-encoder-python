@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < block_split.py 2016-05-07 00:35:17 >
+# Time-stamp: < block_split.py 2016-05-07 12:53:51 >
 """
 块分割
 """ 
@@ -10,16 +10,6 @@ import math
 
 # 最终的方块边长，调试用。
 # blk_width=8
-
-# 测试矩阵，课本P129，已删除部份，留下6x7矩阵
-test_table=np.array([
-	[139,144,149,153,155,155,155],
-	[144,151,153,156,159,156,156],
-	[150,155,160,163,158,156,156],
-	[159,161,162,160,160,159,159],
-	[159,160,161,162,162,155,155],
-	[161,161,161,161,160,157,157]
-])
 
 # 往图像边缘填充像素至长度为8的倍数
 def padding_dummy_edge(input_matrix,blk_width=8):
@@ -69,14 +59,29 @@ def split_to_blocks(input_matrix,blk_width=8):
 	return all_small_blocks,horizontal_blocks,vertical_blocks_num
 
 def test():
+	# 测试矩阵，课本P129，已删除部份，留下6x7矩阵
+	test_table=np.array([
+		[139,144,149,153,155,155,155],
+		[144,151,153,156,159,156,156],
+		[150,155,160,163,158,156,156],
+		[159,161,162,160,160,159,159],
+		[159,160,161,162,162,155,155],
+		[161,161,161,161,160,157,157]
+	])
+	
+	print "Original blocks:(6x7)"
+	print test_table
+
+	print "padded table:(8x8)"
 	padded_table=padding_dummy_edge(test_table,8)
-	print "Original blocks:"
 	print padded_table
 	print '*'*10
-	print "cutted blocks:"
+	
+	print "cutted blocks:(4x4)"
 	blocks,hor_num,ver_num=split_to_blocks(padded_table,4)
 	for i in blocks:
 		print i
+		print ""
 
 if __name__ == '__main__':
 	test()

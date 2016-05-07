@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < quantize.py 2016-05-07 08:45:58 >
+# Time-stamp: < quantize.py 2016-05-07 12:55:30 >
 """
 量化
 """ 
@@ -32,23 +32,13 @@ chrominance_table=np.array([
 	[99,99,99,99,99,99,99,99],
 	[99,99,99,99,99,99,99,99],
 ])
-# 测试矩阵
-test_table=np.array([
-	[235.6, -1, -12.1, -5.2, 2.1, -1.7, -2.7, 1.3],
-	[-22.6, -17.5, -6.2, -3.2, -2.9, -0.1, -0.4, -1.2],
-	[-10.9, -9.3, -1.6, 1.5, 0.2, 0.9, -0.6, -0.1],
-	[-7.1, -1.9, 0.2, 1.5, -0.9, -0.1, 0, 0.3],
-	[-0.6, -0.8, 1.5, 1.6, -0.1, -0.7, 0.6, 1.3],
-	[1.8, -0.2, 1.6, -0.3, -0.8, 1.5, 1.0, -1.0],
-	[-1.3, -0.4, -0.3, -1.5, -0.5, 1.7, 1.1, -0.8],
-	[-2.6, 1.6, -3.8, -1.8, 1.9, 1.2, -0.6, -0.4]
-])
+
 def get_quantisation(input_matrix, table_name, mode):
 	global chrominance_table, luminance_table, output_table
 	# 选择量化表
 	if table_name == 'luminance':
 		table = luminance_table
-	if table == 'chrominance':
+	if table_name == 'chrominance':
 		table = chrominance_table
 		
 	# 选择正向量化或反量化
@@ -62,6 +52,17 @@ def get_quantisation(input_matrix, table_name, mode):
 	return output_table
 
 def test():
+	# 测试矩阵
+	test_table=np.array([
+		[235.6, -1, -12.1, -5.2, 2.1, -1.7, -2.7, 1.3],
+		[-22.6, -17.5, -6.2, -3.2, -2.9, -0.1, -0.4, -1.2],
+		[-10.9, -9.3, -1.6, 1.5, 0.2, 0.9, -0.6, -0.1],
+		[-7.1, -1.9, 0.2, 1.5, -0.9, -0.1, 0, 0.3],
+		[-0.6, -0.8, 1.5, 1.6, -0.1, -0.7, 0.6, 1.3],
+		[1.8, -0.2, 1.6, -0.3, -0.8, 1.5, 1.0, -1.0],
+		[-1.3, -0.4, -0.3, -1.5, -0.5, 1.7, 1.1, -0.8],
+		[-2.6, 1.6, -3.8, -1.8, 1.9, 1.2, -0.6, -0.4]
+	])
 	table_forward = get_quantisation(test_table, 'luminance', 'forward')
 	print table_forward
 	print '-' * 10
