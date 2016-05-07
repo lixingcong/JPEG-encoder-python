@@ -1,12 +1,34 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-07 21:58:13 >
+# Time-stamp: < io_bmp.py 2016-05-07 23:45:35 >
 """
 读写bmp文件
 """ 
 
 import os
 import struct
+
+def generate_colorspace(num):
+	output_list = []
+	for i in xrange(num):
+		output_list.append(i)
+		output_list.append(i)
+		output_list.append(i)
+		output_list.append(0)
+	s = struct.pack('<{0}B'.format(4 * num), *output_list)
+	return s
+
+# Header of BMP固定格式
+HEADER_SIGN = 0x4d42 # offset 0
+HEADER_OFFSET = 0x00000436 # offset 10
+HEADER_BITMAPINFOHEADER = 0x00000028 # offset 14
+HEADER_NUMOFPLANES = 0x0001 # offset 26
+HEADER_BITSPERPIXEL = 0x0008 # offset 28
+HEADER_COMPRESSION = 0x00000000 # offset 30
+HEADER_NUMBERSOFCOLORS = 0x00000100 # offset 46
+HEADER_NUMBERSOFIMPORTANTCOLORS = 0x00000100 # offset 50
+
+
 
 class BMP(object):
 	def __init__(self, filelocation, height=0, width=0, binary=None):
@@ -30,7 +52,9 @@ class BMP(object):
 		return (self.height, self.width)
 		
 	def write_header(self, f):
-		pass
+		
+		HEADER_COLORSPACE = generate_colorspace(256)
+		
 
 	def get_data(self):
 		return (self.height, self.width, self.binary)
@@ -55,11 +79,12 @@ class BMP(object):
 		pass
 	
 def test():
-	my_pic = BMP('data/color.bmp')
-	my_pic.read_bmp()
-	(height, width) = my_pic.get_header()
-	print height, width
-	
+	# my_pic = BMP('data/color.bmp')
+	# my_pic.read_bmp()
+	# (height, width) = my_pic.get_header()
+	# print height, width
+	t = generate_colorspace(3)
+	print repr(t)
 
 if __name__ == '__main__':
 	test()
