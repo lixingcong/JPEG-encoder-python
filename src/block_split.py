@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < block_split.py 2016-05-07 00:33:19 >
+# Time-stamp: < block_split.py 2016-05-07 00:35:17 >
 """
 块分割
 """ 
@@ -52,8 +52,8 @@ def padding_dummy_edge(input_matrix,blk_width=8):
 # 将图像打碎成8x8块
 def split_to_blocks(input_matrix,blk_width=8):
 	height=input_matrix.shape[0]
-	width=input_matrix.shape[1]
-	
+	width=input_matrix.shape[1]	
+
 	# 图像块的数目
 	horizontal_blocks_num=height/blk_width
 	vertical_blocks_num=width/blk_width
