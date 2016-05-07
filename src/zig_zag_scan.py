@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < zig_zag_scan.py 2016-05-07 09:03:07 >
+# Time-stamp: < zig_zag_scan.py 2016-05-07 09:20:07 >
 """
 Z字形的扫描,zig-zag scan
 """ 
@@ -19,9 +19,20 @@ order_of_dct_table = np.array([
 	[35, 36, 48, 49, 57, 58, 62, 63],
 ],dtype=np.uint8)
 
+# 测试矩阵，课本P129，附有正确答案
+test_table=np.array([
+	[139,144,149,153,155,155,155,155],
+	[144,151,153,156,159,156,156,156],
+	[150,155,160,163,158,156,156,156],
+	[159,161,162,160,160,159,159,159],
+	[159,160,161,162,162,155,155,155],
+	[161,161,161,161,160,157,157,157],
+	[162,162,161,163,162,157,157,157],
+	[162,162,161,161,163,158,158,158]
+])
 
 # 整理成一个1x64的映射序列
-def generate_seq():
+def generate_dict():
 	global order_of_dct_table
 	seq_dict = {}
 	for i,j in [(i,j) for i in xrange(8) for j in xrange(8)]:
@@ -29,12 +40,17 @@ def generate_seq():
 	return seq_dict
 
 def get_seq_1x64(input_matrix):
-	pass
+	dict_DCT = generate_dict()
+	list_DCT = []
+	for i in xrange(64):
+		order = dict_DCT[i]
+		list_DCT.append(input_matrix[order / 8, order % 8])
+	return list_DCT
 
 def test():
-	t = generate_seq()
-	for i in t:
-		print "%d->%d" % (i, t[i])
+	list_DCT = get_seq_1x64(test_table)
+	for i in list_DCT:
+		print i
 
 if __name__ == '__main__':
 	test()
