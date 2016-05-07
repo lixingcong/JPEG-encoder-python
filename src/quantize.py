@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < quantize.py 2016-05-07 08:43:54 >
+# Time-stamp: < quantize.py 2016-05-07 08:45:58 >
 """
 量化
 """ 
@@ -45,10 +45,13 @@ test_table=np.array([
 ])
 def get_quantisation(input_matrix, table_name, mode):
 	global chrominance_table, luminance_table, output_table
+	# 选择量化表
 	if table_name == 'luminance':
 		table = luminance_table
 	if table == 'chrominance':
 		table = chrominance_table
+		
+	# 选择正向量化或反量化
 	if mode == 'forward':
 		for u, v in [(u, v) for u in xrange(8) for v in xrange(8)]:
 			output_table[u, v] = round(input_matrix[u, v] / table[u, v])
@@ -64,5 +67,6 @@ def test():
 	print '-' * 10
 	table_backward = get_quantisation(table_forward, 'luminance', 'backward')
 	print table_backward
+	
 if __name__ == '__main__':
 	test()
