@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < block_split.py 2016-05-07 12:53:51 >
+# Time-stamp: < block_split.py 2016-05-09 22:27:43 >
 """
 块分割
 """ 
@@ -17,9 +17,11 @@ def padding_dummy_edge(input_matrix,blk_width=8):
 	height=input_matrix.shape[0]
 	width=input_matrix.shape[1]
 	
-	# 不需要做padding
+	# 不需要做padding，直接返回
 	if height%blk_width==0 and width%blk_width==0:
 		return input_matrix
+
+	# 计算新的矩阵尺寸
 	height_new=height+(blk_width-height%blk_width)
 	width_new=width+(blk_width-width%blk_width)
 	
@@ -27,19 +29,19 @@ def padding_dummy_edge(input_matrix,blk_width=8):
 	new_table=np.zeros(height_new*width_new,
 					   dtype=np.float64).reshape(height_new,width_new)
 	# 复制原有图像的信息到新图像
-	for x,y in [(x,y) for x in xrange(height) for y in xrange(width)]:
-		new_table[x,y]=input_matrix[x,y]
+	for y,x in [(y,x) for x in xrange(width) for y in xrange(height)]:
+		new_table[y,x]=input_matrix[y, x]
 		
 	# 先横向填充，再纵向填充
-	for y in xrange(width,width_new):
-		for x in xrange(height_new):
-			new_table[x,y]=new_table[x,width-1]
-	for x in xrange(height,height_new):
-		for y in xrange(width_new):
-			new_table[x,y]=new_table[height-1,y]
+	for x in xrange(width,width_new):
+		for y in xrange(height_new):
+			new_table[y,x]=new_table[y,width-1]
+	for y in xrange(height,height_new):
+		for x in xrange(width_new):
+			new_table[y,x]=new_table[height-1,x]
 	return new_table
 
-# 将图像打碎成8x8块
+# 将图像打碎成8x8块，参数blk_width表示新的边长
 def split_to_blocks(input_matrix,blk_width=8):
 	height=input_matrix.shape[0]
 	width=input_matrix.shape[1]	
@@ -69,10 +71,11 @@ def test():
 		[161,161,161,161,160,157,157]
 	])
 	
-	print "Original blocks:(6x7)"
+	print "Original blocks:(7x6)"
 	print test_table
 
 	print "padded table:(8x8)"
+	# 第二个参数4表示定义打碎后的块边长4
 	padded_table=padding_dummy_edge(test_table,8)
 	print padded_table
 	print '*'*10
