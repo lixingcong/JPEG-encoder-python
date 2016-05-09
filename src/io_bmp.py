@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-09 22:02:48 >
+# Time-stamp: < io_bmp.py 2016-05-09 22:13:24 >
 """
 读写bmp文件
 """ 
@@ -8,7 +8,8 @@
 import numpy as np
 import struct
 
-def generate_colorspace(num):
+# 生成256灰度调色板，其中num是色深
+def generate_colorspace(num=256):
 	output_list = []
 	for i in xrange(num):
 		insert_item = (struct.pack('4B', i & 0xff, i & 0xff, i & 0xff, 0))
@@ -23,7 +24,7 @@ def calc_real_datasize(width, height):
 	w = ((width * bit_per_pixel + 31) >> 5) << 2
 	return (w * height, w - width)
 
-# Header of BMP固定格式
+# BMP固定文件头数据
 HEADER_SIGN = 0x4d42 # offset 0
 HEADER_OFFSET = 0x00000436 # offset 10
 HEADER_BITMAPINFOHEADER = 0x00000028 # offset 14
@@ -39,7 +40,7 @@ class BMP(object):
 	def __init__(self, filelocation, input_matrix=None):
 		self.filelocation = filelocation
 		self.matrix = input_matrix
-		if input_matrix is not None:
+		if self.matrix is not None:
 			self.height = self.matrix.shape[0]
 			self.width = self.matrix.shape[1]
 			t = calc_real_datasize(self.width, self.height)
@@ -50,12 +51,12 @@ class BMP(object):
 			self.width = 0
 			self.data_size = 0
 			self.padding_bytes_each_line = 0
-		# self.binary = None
 		self.header = None
 		self.buffer = None
-		# default value, changeable
+		# default value, changeable when there is no colorpan
 		self.data_offset = 1078
 
+	# 读取bmp文件头
 	def read_header(self, f):
 		# 分辨率
 		f.seek(18)
@@ -74,10 +75,7 @@ class BMP(object):
 		self.buffer = f.read(4)
 		self.data_offset = struct.unpack('<I', self.buffer)[0]
 		
-
-	# def get_header(self):
-	# 	return (self.height, self.width)
-		
+	# 写入bmp文件头
 	def write_header(self, f):
 		self.header = struct.pack('<H', HEADER_SIGN) #offset 0
 		self.header += struct.pack('<Q', 0) # offset 2
@@ -92,7 +90,7 @@ class BMP(object):
 		self.header += struct.pack('<I', HEADER_NUMBERSOFCOLORS) # offset 46
 		self.header += struct.pack('<I', HEADER_NUMBERSOFIMPORTANTCOLORS) # offset 50
 		# 写入调色板（灰度0~255）
-		HEADER_COLORSPACE_bin = generate_colorspace(256)
+		HEADER_COLORSPACE_bin = generate_colorspace()
 		for i in xrange(256):
 			self.header += HEADER_COLORSPACE_bin[i]
 		# print (self.binary).encode('hex')
@@ -112,7 +110,8 @@ class BMP(object):
 					self.matrix[y, x] = ord(f.read(1))
 				# 跳过几个padding字节
 				f.seek(self.padding_bytes_each_line, 1)
-					
+				
+	# 简易写入bmp，仅实现了灰度图像写入					
 	def write_bmp(self):
 		with open(self.filelocation, 'wb') as f:
 			self.write_header(f)
@@ -121,6 +120,7 @@ class BMP(object):
 			for y in xrange(self.height):
 				for x in xrange(self.width):
 					f.write(self.matrix[y, x])
+				# padding数据
 				for i in xrange(self.padding_bytes_each_line):
 					f.write('\x00')
 				
