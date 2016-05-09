@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-09 21:42:47 >
+# Time-stamp: < io_bmp.py 2016-05-09 22:02:48 >
 """
 读写bmp文件
 """ 
@@ -38,9 +38,10 @@ HEADER_NUMBERSOFIMPORTANTCOLORS = 0x00000100 # offset 50
 class BMP(object):
 	def __init__(self, filelocation, input_matrix=None):
 		self.filelocation = filelocation
-		if input_matrix != None:
-			self.height = input_matrix.shape[0]
-			self.width = input_matrix.shape[1]
+		self.matrix = input_matrix
+		if input_matrix is not None:
+			self.height = self.matrix.shape[0]
+			self.width = self.matrix.shape[1]
 			t = calc_real_datasize(self.width, self.height)
 			self.data_size = t[0]
 			self.padding_bytes_each_line = t[1]
@@ -62,8 +63,12 @@ class BMP(object):
 		resolution = struct.unpack('<II', self.buffer)
 		self.width = resolution[0]
 		self.height = resolution[1]
+		# 新建一个矩阵
+		self.matrix = np.zeros(self.height * self.width,dtype=np.uint8).reshape(self.height,self.width)
 		# 二进制流大小
-		self.data_size = calc_real_datasize(self.width, self.height)[0]
+		t = calc_real_datasize(self.width, self.height)
+		self.data_size = t[0]
+		self.padding_bytes_each_line = t[1]
 		# 文件数据偏置地址
 		f.seek(10)
 		self.buffer = f.read(4)
@@ -95,33 +100,43 @@ class BMP(object):
 		f.write(self.header)
 
 	def get_data(self):
-		return (self.height, self.width, self.buffer)
+		return (self.height, self.width, self.matrix)
 	
 	# 简易读取bmp，仅实现了灰度图像读取
 	def read_bmp(self):
 		with open(self.filelocation, 'rb') as f:
 			self.read_header(f)
 			f.seek(self.data_offset)
-			self.buffer = f.read(self.data_size)
-			
+			for y in xrange(self.height):
+				for x in xrange(self.width):
+					self.matrix[y, x] = ord(f.read(1))
+				# 跳过几个padding字节
+				f.seek(self.padding_bytes_each_line, 1)
+					
 	def write_bmp(self):
 		with open(self.filelocation, 'wb') as f:
 			self.write_header(f)
+			# 写入二进制数据
 			f.seek(self.data_offset)
-			f.write(self.binary)
+			for y in xrange(self.height):
+				for x in xrange(self.width):
+					f.write(self.matrix[y, x])
+				for i in xrange(self.padding_bytes_each_line):
+					f.write('\x00')
+				
 
 	def show_bmp(self):
 		pass
 	
 def test():
-	# my_pic = BMP('data/color.bmp')
-	my_pic = BMP('/tmp/63x64.bmp')
+	my_pic = BMP('data/color.bmp')
+	# my_pic = BMP('/tmp/63x64.bmp')
 	my_pic.read_bmp()
-	height, width, bin_1 = my_pic.get_data()
+	height, width, matrix = my_pic.get_data()
 	print height, width
 	
-	exit(0)
-	my_pic1 = BMP('/tmp/3g.bmp', height, width, bin_1)
+	# exit(0)
+	my_pic1 = BMP('/tmp/3g.bmp', matrix)
 	my_pic1.write_bmp()
 
 if __name__ == '__main__':
