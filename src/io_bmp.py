@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-09 21:25:07 >
+# Time-stamp: < io_bmp.py 2016-05-09 21:42:47 >
 """
 读写bmp文件
 """ 
@@ -21,7 +21,7 @@ def generate_colorspace(num):
 def calc_real_datasize(width, height):
 	bit_per_pixel = 8
 	w = ((width * bit_per_pixel + 31) >> 5) << 2
-	return (w * height)
+	return (w * height, w - width)
 
 # Header of BMP固定格式
 HEADER_SIGN = 0x4d42 # offset 0
@@ -36,12 +36,20 @@ HEADER_NUMBERSOFIMPORTANTCOLORS = 0x00000100 # offset 50
 
 
 class BMP(object):
-	def __init__(self, filelocation, height=0, width=0, binary=None):
+	def __init__(self, filelocation, input_matrix=None):
 		self.filelocation = filelocation
-		self.height = height
-		self.width = width
-		self.data_size = calc_real_datasize(self.width, self.height)
-		self.binary = binary
+		if input_matrix != None:
+			self.height = input_matrix.shape[0]
+			self.width = input_matrix.shape[1]
+			t = calc_real_datasize(self.width, self.height)
+			self.data_size = t[0]
+			self.padding_bytes_each_line = t[1]
+		else:
+			self.height = 0
+			self.width = 0
+			self.data_size = 0
+			self.padding_bytes_each_line = 0
+		# self.binary = None
 		self.header = None
 		self.buffer = None
 		# default value, changeable
@@ -54,8 +62,9 @@ class BMP(object):
 		resolution = struct.unpack('<II', self.buffer)
 		self.width = resolution[0]
 		self.height = resolution[1]
-		self.data_size = self.width * self.height
-		# 文件数据偏置
+		# 二进制流大小
+		self.data_size = calc_real_datasize(self.width, self.height)[0]
+		# 文件数据偏置地址
 		f.seek(10)
 		self.buffer = f.read(4)
 		self.data_offset = struct.unpack('<I', self.buffer)[0]
@@ -77,7 +86,7 @@ class BMP(object):
 		self.header += struct.pack('<QI', 0, 0) # offset 34
 		self.header += struct.pack('<I', HEADER_NUMBERSOFCOLORS) # offset 46
 		self.header += struct.pack('<I', HEADER_NUMBERSOFIMPORTANTCOLORS) # offset 50
-		# 写入颜色RLE码字
+		# 写入调色板（灰度0~255）
 		HEADER_COLORSPACE_bin = generate_colorspace(256)
 		for i in xrange(256):
 			self.header += HEADER_COLORSPACE_bin[i]
@@ -86,15 +95,15 @@ class BMP(object):
 		f.write(self.header)
 
 	def get_data(self):
-		return (self.height, self.width, self.binary)
+		return (self.height, self.width, self.buffer)
 	
 	# 简易读取bmp，仅实现了灰度图像读取
 	def read_bmp(self):
 		with open(self.filelocation, 'rb') as f:
 			self.read_header(f)
 			f.seek(self.data_offset)
-			self.binary = f.read(self.data_size)
-
+			self.buffer = f.read(self.data_size)
+			
 	def write_bmp(self):
 		with open(self.filelocation, 'wb') as f:
 			self.write_header(f)
@@ -105,10 +114,13 @@ class BMP(object):
 		pass
 	
 def test():
-	my_pic = BMP('data/color.bmp')
+	# my_pic = BMP('data/color.bmp')
+	my_pic = BMP('/tmp/63x64.bmp')
 	my_pic.read_bmp()
 	height, width, bin_1 = my_pic.get_data()
-
+	print height, width
+	
+	exit(0)
 	my_pic1 = BMP('/tmp/3g.bmp', height, width, bin_1)
 	my_pic1.write_bmp()
 
