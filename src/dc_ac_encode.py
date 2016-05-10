@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-07 15:48:59 >
+# Time-stamp: < dc_ac_encode.py 2016-05-11 00:27:12 >
 """
 DC AC系数的编码
 """ 
@@ -10,7 +10,7 @@ import numpy as np
 # 位长的计算
 def calc_need_bits(input_num):
 	num = abs(input_num)
-	# 注意：直流分量才允许input_num=0，直流系数中不存在0
+	# 注意：DC才允许input_num=0，AC系数中不存在0
 	if num == 0:
 		return 0
 	returnValue = 1
@@ -39,12 +39,12 @@ def ac_encode(input_list):
 	# 开始进行RLE编码
 	while(index < length):
 		zero_counter = 0
-		# 找出连续0个数
-		while(lite_list[index] == 0):
+		# 找出连续0个数,no larger than 15
+		while(lite_list[index] == 0 and zero_counter < 15):
 			zero_counter += 1
 			index += 1
 		current_num = lite_list[index]
-		# 本次REL码字
+		# 本次RLE码字
 		this_round = [zero_counter, calc_need_bits(current_num), current_num]
 		# 生成器yeild
 		yield tuple(this_round)
