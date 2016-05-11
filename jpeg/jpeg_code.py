@@ -20,7 +20,7 @@ zigzig_dict_backward = zig_zag_scan.generate_dict('backward')
 
 def jpeg_encode(input_matrix):
 	temp_matrix = block_split.padding_dummy_edge(input_matrix)
-	blocks_spilted, hor_num, ver_num = block_split.split_to_blocks(temp_matrix)
+	blocks_spilted = block_split.split_to_blocks(temp_matrix)[0]
 	del temp_matrix
 	last_DC_value = 0
 
@@ -32,9 +32,11 @@ def jpeg_encode(input_matrix):
 		encoded_2 = entropy_encode.get_entropy_encode(encoded_1)
 		last_DC_value = result_zig_zag[0]
 
-
 	print encoded_1
 	print encoded_2
+
+def jpeg_decode(input_list):
+	pass
 
 def test():
 	test_table = np.array([
