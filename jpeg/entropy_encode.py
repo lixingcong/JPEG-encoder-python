@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-11 21:22:50 >
+# Time-stamp: < entropy_encode.py 2016-05-11 21:51:36 >
 """
 熵编码
 """ 
@@ -174,7 +174,7 @@ huffman_AC_luminance_table_forward=(
 	"1111111111111110"
 )
 
-huffman_AC_chrominance_table_backward = {
+huffman_AC_luminance_table_backward = {
 	"1010" : 0,
 	"00" : 1,
 	"01" : 2,
@@ -403,7 +403,7 @@ def calc_amplitude(input_num, need_bit, mode=AC_MODE, direction=FORWARD):
 
 		return output_string
 
-# 哈夫曼变长编码，JPEG标准
+# 熵编码
 def get_entropy_encode(input_list):
 	output_list = []
 	# DC 编码
@@ -433,23 +433,53 @@ def get_entropy_encode(input_list):
 	
 	return output_list
 
+# 熵解码
 def get_entropy_decode(input_list):
 	output_list = []
 	# DC 编码
 	dc_bit = input_list[0][0]
 	dc_amp = input_list[0][1]
-	# 查表
+	# 求直流分量的位长
+	dc_bit = huffman_DC_luminance_table_backward[dc_bit]
+	dc_amp = calc_amplitude(dc_amp, dc_bit, mode=False, direction=False)
+	insert_item = (dc_bit, dc_amp)
+	output_list.append(insert_item)
 	
+	# AC解码
+	for ac_item in input_list[1:-1]:
+		# 查表看到对应的十进制数
+		coefficient = ac_item[0]
+		ac_zero_counter_and_bit = huffman_AC_luminance_table_backward[coefficient]
+		# 由(跨越/位长)得出查表位置=跨越*10+位长
+		ac_zero_counter = ac_zero_counter_and_bit / 10
+		ac_bit = ac_zero_counter_and_bit % 10
+		# 计算幅值
+		ac_amp = ac_item[1]
+		ac_amp = calc_amplitude(ac_amp, ac_bit, mode=AC_MODE, direction=False)
+		
+		insert_item = (ac_zero_counter, ac_bit, ac_amp)
+		output_list.append(insert_item)
+
+	# EOB编码
+	EOB = (0, 0)
+	output_list.append(EOB)
+	
+	return output_list
 
 def test():
 	# 测试数据，来自P130上方
-	# test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
-	# ll = get_entropy_encode(test_list)
-	# for i in ll:print i
-	while True:
-		i, j = (raw_input().split())
-		print calc_amplitude(i, int(j), AC_MODE, False)
-	pass
+	test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
+	print "original:"
+	print test_list
+	print "#" * 10
+	# 编码
+	encoded = get_entropy_encode(test_list)
+	print "encoded:"
+	print encoded
+	# 解码
+	print "#" * 10
+	print "decoded:"
+	print get_entropy_decode(encoded)
 
 if __name__ == '__main__':
 	test()
