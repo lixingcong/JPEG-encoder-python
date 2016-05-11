@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < block_split.py 2016-05-09 22:27:43 >
+# Time-stamp: < block_split.py 2016-05-11 23:19:18 >
 """
 块分割
 """
 
 import numpy as np
-import math
-
-# 最终的方块边长，调试用。
-# blk_width=8
 
 # 往图像边缘填充像素至长度为8的倍数
 def padding_dummy_edge(input_matrix, blk_width = 8):
@@ -36,16 +32,13 @@ def padding_dummy_edge(input_matrix, blk_width = 8):
 	new_table = np.zeros(height_new * width_new,
 					   dtype = np.float64).reshape(height_new, width_new)
 	# 复制原有图像的信息到新图像
-	for y, x in [(y, x) for x in xrange(width) for y in xrange(height)]:
-		new_table[y, x] = input_matrix[y, x]
+	new_table[:height,:width] = input_matrix[:height,:width]
 
 	# 先横向填充，再纵向填充
 	for x in xrange(width, width_new):
-		for y in xrange(height_new):
-			new_table[y, x] = new_table[y, width - 1]
+		new_table[:height, x] = new_table[:height,width - 1]
 	for y in xrange(height, height_new):
-		for x in xrange(width_new):
-			new_table[y, x] = new_table[height - 1, x]
+		new_table[y, :width_new] = new_table[height - 1, :width_new]
 	return new_table
 
 # 将图像打碎成8x8块，参数blk_width表示新的边长
@@ -69,6 +62,34 @@ def split_to_blocks(input_matrix, blk_width = 8):
 
 	return all_small_blocks, horizontal_blocks_num, vertical_blocks_num
 
+# 拼合成一个原图，并且去掉padding块（row：block的竖直方向个数(行数)，column：block水平方向个数(列数)）
+def merge_blocks(input_list, rows, columns):
+	
+	all_rows_concatenated = []
+	# 先拼合水平方向，成为一行一行的
+	for row in xrange(rows):
+		this_row_items = input_list[(columns * row):(columns * (row + 1))]
+		all_rows_concatenated.append(np.concatenate(this_row_items, axis=1))
+
+	output_matrix = np.concatenate(all_rows_concatenated, axis=0)
+	return output_matrix
+
+# 移除边界补全的多余像素
+def remove_dummy_edge(input_matrix, width_new, height_new):
+	# 输入图像的长度宽度
+	height = input_matrix.shape[0]
+	width = input_matrix.shape[1]
+
+	# 不需要做padding，直接返回
+	if height == height_new and width == width_new:
+		return input_matrix
+
+	# 复制原有图像的信息到新图像
+	new_table = input_matrix[:height_new, :width_new]
+
+	return new_table
+
+# 测试打散矩阵
 def test():
 	# 测试矩阵，课本P129，已删除部份，留下7x9矩阵
 	test_table1 = np.array([
@@ -79,8 +100,8 @@ def test():
 		[159, 160, 161, 162, 162, 155, 155],
 		[161, 161, 161, 161, 160, 157, 157],
 		[161, 161, 161, 161, 160, 157, 157],
-		[161, 161, 161, 161, 160, 157, 157],
-		[161, 161, 161, 161, 160, 157, 157]
+		[161, 164, 161, 161, 160, 157, 157],
+		[164, 161, 161, 161, 160, 157, 157]
 	])
 
 
@@ -127,5 +148,36 @@ def test():
 		print i
 		print ""
 
+# 测试合并矩阵
+def test1():
+	test_table1 = np.array([
+		[139, 144, 149, 153, 155, 155, 155, 155, 155],
+		[144, 151, 153, 156, 159, 156, 156, 156, 155],
+		[150, 155, 160, 163, 158, 156, 156, 156, 155],
+		[159, 161, 162, 160, 160, 159, 159, 159, 155],
+		[159, 160, 161, 162, 162, 155, 155, 155, 155],
+		[161, 161, 161, 161, 160, 157, 157, 157, 155],
+		[162, 162, 161, 163, 162, 157, 157, 157, 155]
+	])
+	test_table2 = np.array([
+		[1, 1, 149, 153, 155, 155, 155, 155, 155],
+		[1, 1, 153, 156, 159, 156, 156, 156, 155],
+		[1, 1, 160, 163, 158, 156, 156, 156, 155],
+		[1, 1, 162, 160, 160, 159, 159, 159, 155],
+		[1, 1, 161, 162, 162, 155, 155, 155, 155],
+		[1, 1, 161, 161, 160, 157, 157, 157, 155],
+		[1, 1, 161, 163, 162, 157, 157, 157, 155]
+	])
+	test_list = [test_table1, test_table2]
+	# 合并矩阵
+	print "merge to 2x1"
+	print merge_blocks(test_list, 1, 2)
+	print "##" * 46
+	print "merge to 1x2"
+	print merge_blocks(test_list, 2, 1)
+	# 移除dummpy块
+	print remove_dummy_edge(test_table1, 6, 6)
+	
 if __name__ == '__main__':
 	test()
+	# test1()
