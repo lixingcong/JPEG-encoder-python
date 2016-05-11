@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < zig_zag_scan.py 2016-05-07 12:50:49 >
+# Time-stamp: < zig_zag_scan.py 2016-05-11 22:05:49 >
 """
 Z字形的扫描,zig-zag scan
 """ 
 
 import numpy as np
+FORWARD = True
 
 # Z字形排列的量化DCT系数之序号
 order_of_dct_table = np.array([
@@ -23,14 +24,12 @@ order_of_dct_table = np.array([
 def generate_dict(direction):
 	global order_of_dct_table
 	seq_dict = {}
-	if direction == 'forward':
+	if direction is FORWARD:
 		for i,j in [(i,j) for i in xrange(8) for j in xrange(8)]:
 			seq_dict[int(order_of_dct_table[i, j])] = int(i * 8 + j)
-	elif direction == 'backward':	
+	else:	
 		for i,j in [(i,j) for i in xrange(8) for j in xrange(8)]:
 			seq_dict[int(i * 8 + j)] = int(order_of_dct_table[i, j])
-	else:
-		return
 	return seq_dict
 
 # 把8x8的矩阵按照z字形顺序转成1x64的列表
@@ -43,7 +42,7 @@ def get_seq_1x64(input_matrix, seq_dict):
 
 # 把1x64的列表转成8x8矩阵
 def restore_matrix_from_1x64(input_list, seq_dict):
-	output_matrix = np.zeros(64).reshape(8,8)
+	output_matrix = np.zeros(64, dtype = np.uint8).reshape(8,8)
 	for i,j in [(i,j) for i in xrange(8) for j in xrange(8)]:
 		order = seq_dict[8 * i + j]
 		output_matrix[i, j] = input_list[order]
@@ -62,18 +61,18 @@ def test():
 		[162,162,161,161,163,158,158,158]
 	])
 	
-	print "original table:"
+	print "original table: 8x8"
 	print test_table
 
 	# 转成1x64
-	dict_forward = generate_dict('forward')
+	dict_forward = generate_dict(direction = FORWARD)
 	list_DCT_forward = get_seq_1x64(test_table, dict_forward)
-	print "forward:"
+	print "forward: TO 64x1"
 	print list_DCT_forward
 
 	# 转成8x8
-	print "backward:"
-	dict_backward = generate_dict('backward')
+	print "backward: TO 8x8"
+	dict_backward = generate_dict(direction = False)
 	np_DCT_backward = restore_matrix_from_1x64(list_DCT_forward, dict_backward)
 	print np_DCT_backward
 	
