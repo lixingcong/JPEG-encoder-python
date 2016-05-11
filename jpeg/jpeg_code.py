@@ -5,12 +5,12 @@
 JPEG编码
 """
 
-import block_split
-import dct
-import quantize
-import zig_zag_scan
-import entropy_encode
-import dc_ac_encode
+form src import block_split
+# form src import dct
+# import quantize
+# import zig_zag_scan
+# import entropy_encode
+# import dc_ac_encode
 import numpy as np
 
 def jpeg_encode(input_matrix):
