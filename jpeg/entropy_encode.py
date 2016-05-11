@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-11 20:49:09 >
+# Time-stamp: < entropy_encode.py 2016-05-11 21:22:50 >
 """
 熵编码
 """ 
+
+AC_MODE = True
+FORWARD = True
 
 # 色度交流系数，从itu-t81.pdf中复制过来的。
 huffman_AC_luminance_table_forward=(
@@ -366,26 +369,39 @@ huffman_DC_luminance_table_backward = {
 }
 
 # 计算幅值，课本P133
-def calc_amplitude(input_num, need_bit, mode="AC"):
-	num = abs(input_num) & 0xffff
-	if mode == 'DC' and input_num == 0:
+def calc_amplitude(input_num, need_bit, mode=AC_MODE, direction=FORWARD):
+	if mode is not AC_MODE and input_num == 0:
 		return "0"
-	index = 0
-	output_string = ""
-	# 正数
-	if  input_num >= 0:
-		while index < need_bit:
-			this_bit = "1" if ((num >> index) & 0x1) else "0"
-			output_string = this_bit + output_string
-			index += 1
-	# 负数
+	if direction is not FORWARD:
+		num = int('0b' + input_num, 2)
+		middle = 1 << (need_bit - 1)
+		if num >= middle:
+			return num
+		else:
+			sum = 0
+			for i in xrange(need_bit):
+				this_bit = num >> i & 0x1
+				if this_bit == 0:
+					sum += (1 << i)
+			return -sum
 	else:
-		while index < need_bit:
-			this_bit = "0" if ((num >> index) & 0x1) else "1"
-			output_string = this_bit + output_string
-			index += 1
+		num = abs(input_num) & 0xffff
+		index = 0
+		output_string = ""
+		# 正数
+		if  input_num >= 0:
+			while index < need_bit:
+				this_bit = "1" if ((num >> index) & 0x1) else "0"
+				output_string = this_bit + output_string
+				index += 1
+		# 负数
+		else:
+			while index < need_bit:
+				this_bit = "0" if ((num >> index) & 0x1) else "1"
+				output_string = this_bit + output_string
+				index += 1
 
-	return output_string
+		return output_string
 
 # 哈夫曼变长编码，JPEG标准
 def get_entropy_encode(input_list):
@@ -419,14 +435,21 @@ def get_entropy_encode(input_list):
 
 def get_entropy_decode(input_list):
 	output_list = []
-	pass
+	# DC 编码
+	dc_bit = input_list[0][0]
+	dc_amp = input_list[0][1]
+	# 查表
 	
 
 def test():
 	# 测试数据，来自P130上方
-	test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
-	ll = get_entropy_encode(test_list)
-	for i in ll:print i
+	# test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
+	# ll = get_entropy_encode(test_list)
+	# for i in ll:print i
+	while True:
+		i, j = (raw_input().split())
+		print calc_amplitude(i, int(j), AC_MODE, False)
+	pass
 
 if __name__ == '__main__':
 	test()
