@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-11 18:31:25 >
+# Time-stamp: < io_bmp.py 2016-05-11 18:54:25 >
 """
 读写bmp文件
 """ 
@@ -107,7 +107,7 @@ class BMP(object):
 		with open(self.filelocation, 'rb') as f:
 			self.read_header(f)
 			f.seek(self.data_offset)
-			for y in xrange(self.height):
+			for y in xrange(self.height - 1, -1, -1):
 				for x in xrange(self.width):
 					self.matrix[y, x] = ord(f.read(1))
 				# 跳过几个padding字节
@@ -119,7 +119,7 @@ class BMP(object):
 			self.write_header(f)
 			# 写入二进制数据
 			f.seek(self.data_offset)
-			for y in xrange(self.height):
+			for y in xrange(self.height - 1, -1, -1):
 				for x in xrange(self.width):
 					f.write(chr(self.matrix[y, x]))
 				# padding数据
@@ -131,19 +131,32 @@ class BMP(object):
 		pass
 	
 def test():
+
+	# 测试图像对拷
+	my_pic1 = BMP('data/color.bmp')
+	my_pic1.read_bmp()
+	height, width, matrix = my_pic1.get_data()
+	print "width,height: %d %d" % (width, height)
+	print matrix
+
+	my_pic2 = BMP('/tmp/color_copy.bmp', matrix)
+	my_pic2.write_bmp()
+	del matrix
+	
+	# exit(0)
+	# 测试自定义写入图像 8x7
 	matrix=np.array([
 		[0, 255, 255, 255, 255, 255, 255, 255],
 		[255, 255, 255, 255, 255, 255, 255, 255],
-		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 0, 255, 255, 255, 255, 255, 255],
 		[255, 255, 255, 255, 255, 255, 255, 255],
 		[255, 255, 255, 255, 255, 255, 255, 255],
-		[255, 255, 255, 255, 255, 255, 255, 255],
-		[255, 255, 255, 255, 255, 255, 255, 255],
-		[255, 255, 255, 255, 255, 255, 255, 255]
-
+		[255, 255, 255, 255, 255, 0, 255, 255],
+		[255, 255, 255, 255, 255, 0, 0, 255]
+	
 	])
-	my_pic1 = BMP('/tmp/3g.bmp', matrix)
-	my_pic1.write_bmp()
+	my_pic3 = BMP('/tmp/8x7.bmp', matrix)
+	my_pic3.write_bmp()
 
 if __name__ == '__main__':
 	test()
