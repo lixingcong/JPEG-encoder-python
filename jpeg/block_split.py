@@ -32,11 +32,11 @@ def padding_dummy_edge(input_matrix, blk_width = 8):
 	new_table = np.zeros(height_new * width_new,
 					   dtype = np.float64).reshape(height_new, width_new)
 	# 复制原有图像的信息到新图像
-	new_table[:height,:width] = input_matrix[:height,:width]
+	new_table[:height, :width] = input_matrix[:height, :width]
 
 	# 先横向填充，再纵向填充
 	for x in xrange(width, width_new):
-		new_table[:height, x] = new_table[:height,width - 1]
+		new_table[:height, x] = new_table[:height, width - 1]
 	for y in xrange(height, height_new):
 		new_table[y, :width_new] = new_table[height - 1, :width_new]
 	return new_table
@@ -45,12 +45,14 @@ def padding_dummy_edge(input_matrix, blk_width = 8):
 def split_to_blocks(input_matrix, blk_width = 8):
 	height = input_matrix.shape[0]
 	width = input_matrix.shape[1]
-	print "in spilt:%d %d" % (height, width)
+	print "in function spilt(): "
+	print "new matrix created: width:%d height:%d" % (width, height)
+
 	# 图像块的数目
 	horizontal_blocks_num = height / blk_width
 	vertical_blocks_num = width / blk_width
 
-	print horizontal_blocks_num, vertical_blocks_num
+	print "split to: rows:%d columns:%d" % (horizontal_blocks_num, vertical_blocks_num)
 
 	all_small_blocks = []
 	# 先横向分割，再纵向分割
@@ -64,14 +66,14 @@ def split_to_blocks(input_matrix, blk_width = 8):
 
 # 拼合成一个原图，并且去掉padding块（row：block的竖直方向个数(行数)，column：block水平方向个数(列数)）
 def merge_blocks(input_list, rows, columns):
-	
+
 	all_rows_concatenated = []
 	# 先拼合水平方向，成为一行一行的
 	for row in xrange(rows):
 		this_row_items = input_list[(columns * row):(columns * (row + 1))]
-		all_rows_concatenated.append(np.concatenate(this_row_items, axis=1))
+		all_rows_concatenated.append(np.concatenate(this_row_items, axis = 1))
 
-	output_matrix = np.concatenate(all_rows_concatenated, axis=0)
+	output_matrix = np.concatenate(all_rows_concatenated, axis = 0)
 	return output_matrix
 
 # 移除边界补全的多余像素
@@ -177,7 +179,7 @@ def test1():
 	print merge_blocks(test_list, 2, 1)
 	# 移除dummpy块
 	print remove_dummy_edge(test_table1, 6, 6)
-	
+
 if __name__ == '__main__':
 	test()
 	# test1()
