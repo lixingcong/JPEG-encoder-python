@@ -2,3 +2,7 @@ other_git/*
 *.pyc
 *.o
 .#*
+.project
+.pydevproject
+.settings/
+
