@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-09 22:13:24 >
+# Time-stamp: < io_bmp.py 2016-05-11 18:31:25 >
 """
 读写bmp文件
 """ 
@@ -19,10 +19,12 @@ def generate_colorspace(num=256):
 	return output_list
 
 # 蔡丽梅《图像处理》P31例题2.1，计算BMP的真实二进制数据大小
-def calc_real_datasize(width, height):
-	bit_per_pixel = 8
-	w = ((width * bit_per_pixel + 31) >> 5) << 2
-	return (w * height, w - width)
+def calc_real_datasize(width, height, isTrueColor=False):
+	if isTrueColor:
+		w = ((width * 8 + 31) >> 5) << 2
+		return (w * height, w - width)
+	else:
+		return (width * height, 0)
 
 # BMP固定文件头数据
 HEADER_SIGN = 0x4d42 # offset 0
@@ -119,23 +121,27 @@ class BMP(object):
 			f.seek(self.data_offset)
 			for y in xrange(self.height):
 				for x in xrange(self.width):
-					f.write(self.matrix[y, x])
+					f.write(chr(self.matrix[y, x]))
 				# padding数据
-				for i in xrange(self.padding_bytes_each_line):
-					f.write('\x00')
+				# for i in xrange(self.padding_bytes_each_line):
+					# f.write('\x00')
 				
 
 	def show_bmp(self):
 		pass
 	
 def test():
-	my_pic = BMP('data/color.bmp')
-	# my_pic = BMP('/tmp/63x64.bmp')
-	my_pic.read_bmp()
-	height, width, matrix = my_pic.get_data()
-	print height, width
-	
-	# exit(0)
+	matrix=np.array([
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[255, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[255, 255, 255, 255, 255, 255, 255, 255],
+		[255, 255, 255, 255, 255, 255, 255, 255],
+		[255, 255, 255, 255, 255, 255, 255, 255],
+		[255, 255, 255, 255, 255, 255, 255, 255],
+		[255, 255, 255, 255, 255, 255, 255, 255]
+
+	])
 	my_pic1 = BMP('/tmp/3g.bmp', matrix)
 	my_pic1.write_bmp()
 
