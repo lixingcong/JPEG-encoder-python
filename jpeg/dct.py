@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dct.py 2016-05-07 12:51:38 >
+# Time-stamp: < dct.py 2016-05-11 23:29:56 >
 """
 离散余弦变换
 """ 
@@ -12,10 +12,10 @@ import math
 w_equal_zero=1.0/math.sqrt(2.0)
 
 # 重复使用的余弦函数表,8x8
-cosine_table=np.zeros(64,dtype=np.float64).reshape(8,8)
+cosine_table=np.zeros(64,dtype=np.float32).reshape(8,8)
 # 临时变量表,8x8
-G_table=np.zeros(64,dtype=np.float64).reshape(8,8)
-F_table=np.zeros(64,dtype=np.float64).reshape(8,8)
+G_table=np.zeros(64,dtype=np.float32).reshape(8,8)
+F_table=np.zeros(64,dtype=np.float32).reshape(8,8)
 
 # 常量表，cos((2j+1)vπ/16)，是关于j和v的函数，作成Look-Up table提高效率
 def generate_tables():
@@ -23,12 +23,14 @@ def generate_tables():
 	for i,j in [(i,j) for i in xrange(8) for j in xrange(8)]:
 		cosine_table[i,j]=math.cos(((2*j+1)*i)*pi/16.0)
 
+# 生成常量表cos
+generate_tables()
+
 def C(w):
 	return 1.0 if w>0 else w_equal_zero
 	
 def forward_dct(input_matrix):
 	global cosine_table,G_table,F_table
-	generate_tables()
 	# 第一轮循环，在课本P124下方的 G(i,v)
 	for i,v in [(i,v) for i in xrange(8) for v in xrange(8)]:
 		sum=0.0
@@ -45,8 +47,7 @@ def forward_dct(input_matrix):
 	return F_table
 		
 def inverse_dct(input_matrix):
-	global cosine_table,G_table,F_table
-	generate_tables()
+	global cosine_table,G_table, F_table
 	# 第一轮循环，在课本P124下方的 G(i,v)逆运算
 	for u,j in [(u,j) for u in xrange(8) for j in xrange(8)]:
 		sum=0.0
@@ -60,7 +61,9 @@ def inverse_dct(input_matrix):
 		for u in xrange(8):
 			sum=sum+C(u)*(G_table[u,j]*cosine_table[u,i])
 		F_table[i,j]=0.5*sum
-	return F_table
+	F_table_int = np.zeros(64, dtype=np.uint8).reshape(8, 8)
+	F_table_int[:, :] = F_table[:, :]
+	return F_table_int
 	
 	
 def test():
@@ -74,7 +77,7 @@ def test():
 		[161,161,161,161,160,157,157,157],
 		[162,162,161,163,162,157,157,157],
 		[162,162,161,161,163,158,158,158]
-	])
+	], dtype=np.uint8)
 
 	# 余弦变换
 	DCT_table=forward_dct(test_table-128)
@@ -82,13 +85,13 @@ def test():
 	for x in xrange(8):
 		for y in xrange(8):
 			print "(%d,%d) %.2f"%(x,y,DCT_table[x,y])
-	return
+
 	print '-'*10
 	# 余弦逆变换
 	print "Inverse-DCT"
 	IDCT_table=inverse_dct(DCT_table)
-	print IDCT_table+128
-
+	print IDCT_table + 128
+	
 if __name__ == '__main__':
 	test()
 	
