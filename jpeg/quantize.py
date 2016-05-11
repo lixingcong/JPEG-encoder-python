@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < quantize.py 2016-05-07 12:55:30 >
+# Time-stamp: < quantize.py 2016-05-11 21:56:41 >
 """
 量化
 """
 
 import numpy as np
+
+FORWARD = True
+LUMINANCE = True
 
 # 重复使用的矩阵，返回结果
 output_table = np.zeros(64, dtype = np.int16).reshape(8, 8)
@@ -33,16 +36,16 @@ luminance_table = np.array([
 	[99, 99, 99, 99, 99, 99, 99, 99],
 ])
 
-def get_quantisation(input_matrix, table_name, mode):
+def get_quantisation(input_matrix, table_name=LUMINANCE, direction=FORWARD):
 	global chrominance_table, luminance_table, output_table
 	# 选择量化表
-	if table_name == 'luminance':
+	if table_name is LUMINANCE:
 		table = luminance_table
-	if table_name == 'chrominance':
+	else:
 		table = chrominance_table
 
 	# 选择正向量化或反量化
-	if mode == 'forward':
+	if direction is FORWARD:
 		for u, v in [(u, v) for u in xrange(8) for v in xrange(8)]:
 			output_table[u, v] = round(input_matrix[u, v] / table[u, v])
 	else:
@@ -63,10 +66,12 @@ def test():
 		[-1.3, -0.4, -0.3, -1.5, -0.5, 1.7, 1.1, -0.8],
 		[-2.6, 1.6, -3.8, -1.8, 1.9, 1.2, -0.6, -0.4]
 	])
-	table_forward = get_quantisation(test_table, 'chrominance', 'forward')
+	print "课本P129 色差量化后结果："
+	table_forward = get_quantisation(test_table, table_name=False, direction=FORWARD)
 	print table_forward
 	print '-' * 10
-	table_backward = get_quantisation(table_forward, 'chrominance', 'backward')
+	print "色差反量化后结果："
+	table_backward = get_quantisation(table_forward, table_name=False, direction=False)
 	print table_backward
 
 if __name__ == '__main__':
