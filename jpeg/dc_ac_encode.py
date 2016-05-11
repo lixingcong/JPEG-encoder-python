@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-11 00:27:12 >
+# Time-stamp: < dc_ac_encode.py 2016-05-11 23:58:14 >
 """
 DC AC系数的编码
 """ 
@@ -66,13 +66,47 @@ def DC_AC_encode(input_list,previous_DC_value):
 	output_list.append(EOC)
 	return output_list
 
+def DC_AC_decode(input_list, previous_DC_value):
+	output_list = []
+	# 直流解码
+	output_list.append(input_list[0][1] + previous_DC_value)
+	# 交流解码
+	for ac_encoded in input_list[1:-1]:
+		zero_counter = ac_encoded[0]
+		current_num = ac_encoded[2]
+		for i in xrange(zero_counter):
+			output_list.append(0)
+		output_list.append(current_num)
+	# 补全0
+	zero_in_the_end_count = 64 - len(output_list)
+	for i in xrange(zero_in_the_end_count):
+		output_list.append(0)
+	return output_list
+	
+			
 def test():
 	# 测试矩阵，课本P129 "量化矩阵"转化为1x64列表
 	test_list = [15, 0, -2, -1, -1, -1, 0, 0, -1]
 	# 补零至长度64
 	for i in xrange(55):test_list.append(0)
+	print "encode:"
 	encoded = DC_AC_encode(test_list, 0)
 	for i in encoded:print i
+
+	print "#" * 20
+	print "decode:"
+	test_list_backward=[
+		(4, 15),
+		(1, 2, -2),
+		(0, 1, -1),
+		(0, 1, -1),
+		(0, 1, -1),
+		(2, 1, -1),
+		(0, 0)
+	]
+	res =  DC_AC_decode(test_list_backward, 0)
+	print res
+	print "len:", len(res)
 
 if __name__ == '__main__':
 	test()
