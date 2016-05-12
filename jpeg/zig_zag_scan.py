@@ -48,7 +48,7 @@ def get_seq_1x64(input_matrix):
 
 # 把1x64的列表转成8x8矩阵
 def restore_matrix_from_1x64(input_list):
-	output_matrix = np.zeros(64, dtype = np.uint8).reshape(8, 8)
+	output_matrix = np.zeros(64, dtype = np.int16).reshape(8, 8)
 	for i, j in [(i, j) for i in xrange(8) for j in xrange(8)]:
 		order = scan_dict_backward[8 * i + j]
 		output_matrix[i, j] = input_list[order]
