@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-11 18:54:25 >
+# Time-stamp: < io_bmp.py 2016-05-12 10:37:38 >
 """
 读写bmp文件
 """ 
@@ -100,7 +100,7 @@ class BMP(object):
 		f.write(self.header)
 
 	def get_data(self):
-		return (self.height, self.width, self.matrix)
+		return (self.matrix, self.height, self.width)
 	
 	# 简易读取bmp，仅实现了灰度图像读取
 	def read_bmp(self):
@@ -133,19 +133,20 @@ class BMP(object):
 def test():
 
 	# 测试图像对拷
+	print "-" * 10
 	my_pic1 = BMP('data/color.bmp')
 	my_pic1.read_bmp()
-	height, width, matrix = my_pic1.get_data()
-	print "width,height: %d %d" % (width, height)
-	print matrix
-
+	print "read data/color.bmp ok!"
+	matrix = my_pic1.get_data()[0]
+	
 	my_pic2 = BMP('/tmp/color_copy.bmp', matrix)
 	my_pic2.write_bmp()
+	print "write /tmp/color_copy.bmp ok!"
 	del matrix
 	
-	# exit(0)
 	# 测试自定义写入图像 8x7
-	matrix=np.array([
+	print "-" * 10
+	matrix_gray=np.array([
 		[0, 255, 255, 255, 255, 255, 255, 255],
 		[255, 255, 255, 255, 255, 255, 255, 255],
 		[0, 0, 255, 255, 255, 255, 255, 255],
@@ -153,10 +154,26 @@ def test():
 		[255, 255, 255, 255, 255, 255, 255, 255],
 		[255, 255, 255, 255, 255, 0, 255, 255],
 		[255, 255, 255, 255, 255, 0, 0, 255]
-	
 	])
-	my_pic3 = BMP('/tmp/8x7.bmp', matrix)
+	my_pic3 = BMP('/tmp/8x7.bmp', matrix_gray)
 	my_pic3.write_bmp()
+	print "write /tmp/8x7.bmp ok!"
+
+	# 测试P129的图像
+	print "-" * 10
+	matrix_P129 = np.array([
+		[139, 144, 149, 153, 155, 155, 155, 155],
+		[144, 151, 153, 156, 159, 156, 156, 156],
+		[150, 155, 160, 163, 158, 156, 156, 156],
+		[159, 161, 162, 160, 160, 159, 159, 159],
+		[159, 160, 161, 162, 162, 155, 155, 155],
+		[161, 161, 161, 161, 160, 157, 157, 157],
+		[162, 162, 161, 163, 162, 157, 157, 157],
+		[162, 162, 161, 161, 163, 158, 158, 158]
+	])
+	my_pic4 = BMP('/tmp/P129.bmp', matrix_P129)
+	my_pic4.write_bmp()
+	print "write /tmp/P129.bmp ok!"
 
 if __name__ == '__main__':
 	test()
