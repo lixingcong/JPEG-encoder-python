@@ -3,13 +3,13 @@
 # Time-stamp: < entropy_encode.py 2016-05-11 21:51:36 >
 """
 熵编码
-""" 
+"""
 
 AC_MODE = True
 FORWARD = True
 
 # 色度交流系数，从itu-t81.pdf中复制过来的。
-huffman_AC_luminance_table_forward=(
+huffman_AC_luminance_table_forward = (
 	"1010",
 	"00",
 	"01",
@@ -338,7 +338,7 @@ huffman_AC_luminance_table_backward = {
 	"1111111111111101" : 160,
 	"1111111111111110" : 161
 }
-huffman_DC_luminance_table_forward =(
+huffman_DC_luminance_table_forward = (
 	"00",
 	"010",
 	"011",
@@ -369,9 +369,13 @@ huffman_DC_luminance_table_backward = {
 }
 
 # 计算幅值，课本P133
-def calc_amplitude(input_num, need_bit, mode=AC_MODE, direction=FORWARD):
+def calc_amplitude(input_num, need_bit, mode = AC_MODE, direction = FORWARD):
+	# 直流，且幅值0
 	if mode is not AC_MODE and input_num == 0:
 		return "0"
+	elif mode is not AC_MODE and input_num == '0':
+		return 0
+	# 反向
 	if direction is not FORWARD:
 		num = int('0b' + input_num, 2)
 		middle = 1 << (need_bit - 1)
@@ -384,6 +388,7 @@ def calc_amplitude(input_num, need_bit, mode=AC_MODE, direction=FORWARD):
 				if this_bit == 0:
 					sum += (1 << i)
 			return -sum
+	# 正向
 	else:
 		num = abs(input_num) & 0xffff
 		index = 0
@@ -426,11 +431,11 @@ def get_entropy_encode(input_list):
 		coefficient = huffman_AC_luminance_table_forward[position_in_huffman_table]
 		insert_item = (coefficient, ac_amp)
 		output_list.append(insert_item)
-		
+
 	# EOB编码
-	EOB = ("1010", )
+	EOB = ("1010",)
 	output_list.append(EOB)
-	
+
 	return output_list
 
 # 熵解码
@@ -441,10 +446,10 @@ def get_entropy_decode(input_list):
 	dc_amp = input_list[0][1]
 	# 求直流分量的位长
 	dc_bit = huffman_DC_luminance_table_backward[dc_bit]
-	dc_amp = calc_amplitude(dc_amp, dc_bit, mode=False, direction=False)
+	dc_amp = calc_amplitude(dc_amp, dc_bit, mode = False, direction = False)
 	insert_item = (dc_bit, dc_amp)
 	output_list.append(insert_item)
-	
+
 	# AC解码
 	for ac_item in input_list[1:-1]:
 		# 查表看到对应的十进制数
@@ -455,15 +460,15 @@ def get_entropy_decode(input_list):
 		ac_bit = ac_zero_counter_and_bit % 10
 		# 计算幅值
 		ac_amp = ac_item[1]
-		ac_amp = calc_amplitude(ac_amp, ac_bit, mode=AC_MODE, direction=False)
-		
+		ac_amp = calc_amplitude(ac_amp, ac_bit, mode = AC_MODE, direction = False)
+
 		insert_item = (ac_zero_counter, ac_bit, ac_amp)
 		output_list.append(insert_item)
 
 	# EOB编码
 	EOB = (0, 0)
 	output_list.append(EOB)
-	
+
 	return output_list
 
 def test():
