@@ -36,14 +36,15 @@ luminance_table = np.array([
 	[99, 99, 99, 99, 99, 99, 99, 99],
 ])
 
-def get_quantisation(input_matrix, table_name=LUMINANCE, direction=FORWARD):
+def get_quantisation(input_matrix, table_name = LUMINANCE, direction = FORWARD):
 	global chrominance_table, luminance_table, output_table
 	# 选择量化表
 	if table_name is LUMINANCE:
 		table = luminance_table
-	else:
+	elif table_name is False:
 		table = chrominance_table
-
+	else:
+		table = table_name
 	# 选择正向量化或反量化
 	if direction is FORWARD:
 		for u, v in [(u, v) for u in xrange(8) for v in xrange(8)]:
@@ -67,11 +68,11 @@ def test():
 		[-2.6, 1.6, -3.8, -1.8, 1.9, 1.2, -0.6, -0.4]
 	])
 	print "课本P129 色差量化后结果："
-	table_forward = get_quantisation(test_table, table_name=False, direction=FORWARD)
+	table_forward = get_quantisation(test_table, table_name = False, direction = FORWARD)
 	print table_forward
 	print '-' * 10
 	print "色差反量化后结果："
-	table_backward = get_quantisation(table_forward, table_name=False, direction=False)
+	table_backward = get_quantisation(table_forward, table_name = False, direction = False)
 	print table_backward
 
 if __name__ == '__main__':

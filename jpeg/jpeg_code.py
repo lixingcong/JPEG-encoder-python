@@ -51,7 +51,7 @@ def jpeg_encode(input_matrix):
 	# TODO
 	# 二进制编码
 
-def jpeg_decode(input_list, width, height):
+def jpeg_decode(input_list, quantize_table, width, height):
 	block_num = 1
 	last_DC_value = 0
 	restored_MCU_blocks = []
@@ -60,6 +60,7 @@ def jpeg_decode(input_list, width, height):
 		block_num += 1
 		# 熵解码
 		decode_1 = entropy_encode.get_entropy_decode(MCU)
+		print decode_1
 		# DC AC解码
 		decode_2 = dc_ac_encode.DC_AC_decode(decode_1, last_DC_value)
 		print decode_2
@@ -67,7 +68,7 @@ def jpeg_decode(input_list, width, height):
 		result_zig_zag = zig_zag_scan.restore_matrix_from_1x64(decode_2)
 		print result_zig_zag
 		# 反量化
-		table_unquantized = quantize.get_quantisation(result_zig_zag, LUMINANCE, False)
+		table_unquantized = quantize.get_quantisation(result_zig_zag, quantize_table, False)
 		# 逆DCT变换
 		IDCT_table = dct.inverse_dct(table_unquantized)
 		restored_MCU_blocks.append(IDCT_table + 128)
@@ -84,6 +85,10 @@ def jpeg_decode(input_list, width, height):
 	return final_matrix
 
 def test():
+	q_table = np.ones(64, dtype = np.uint8).reshape(8, 8)
+	test_list = [[("011", "01"), ("1100", "1"), ("1111000", "1010100"), ("1011", "1110"), ("00", "1"), ("01", "01"), ("01", "10"), ("100", "011"), ("01", "01"), ("100", "111"), ("01", "10"), ("01", "11"), ("1010",)]]
+	print jpeg_decode(test_list, q_table, 8, 8)
+	exit(0)
 	# 测试矩阵，在课本P129
 	test_table = np.array([
 		[139, 144, 149, 153, 155, 155, 155, 155],
