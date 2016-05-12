@@ -7,6 +7,18 @@
 
 import numpy as np
 
+# 计算新的矩阵尺寸
+def calc_new_size(width, height, blk_width = 8):
+	if height % blk_width != 0:
+		height_new = height + (blk_width - (height % blk_width))
+	else:
+		height_new = height
+	if width % blk_width != 0:
+		width_new = width + (blk_width - (width % blk_width))
+	else:
+		width_new = width
+	return width_new, height_new
+
 # 往图像边缘填充像素至长度为8的倍数
 def padding_dummy_edge(input_matrix, blk_width = 8):
 	# 输入图像的长度宽度
@@ -18,15 +30,7 @@ def padding_dummy_edge(input_matrix, blk_width = 8):
 		return input_matrix
 
 	# 计算新的矩阵尺寸
-	if height % blk_width != 0:
-		height_new = height + (blk_width - (height % blk_width))
-	else:
-		height_new = height
-	if width % blk_width != 0:
-		width_new = width + (blk_width - (width % blk_width))
-	else:
-		width_new = width
-
+	width_new, height_new = calc_new_size(width, height)
 
 	# 创建一个新的图像矩阵为8的整数倍
 	new_table = np.zeros(height_new * width_new,
@@ -66,7 +70,6 @@ def split_to_blocks(input_matrix, blk_width = 8):
 
 # 拼合成一个原图，并且去掉padding块（row：block的竖直方向个数(行数)，column：block水平方向个数(列数)）
 def merge_blocks(input_list, rows, columns):
-
 	all_rows_concatenated = []
 	# 先拼合水平方向，成为一行一行的
 	for row in xrange(rows):
