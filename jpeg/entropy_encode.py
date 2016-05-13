@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 15:42:37 >
+# Time-stamp: < entropy_encode.py 2016-05-13 16:06:21 >
 """
 熵编码
 """
@@ -475,14 +475,13 @@ def get_entropy_decode(input_list):
 
 # TODO 替换0xff00为0xff
 def get_decoded_from_bin(input_string, offset, datasize):
-	readed_bytes = 0
+	input_string_new = input_string.replace('FF00', 'FF')
+	buffer = bin(int('1' + input_string_new, 16))[3:]
+	
+	# DC 解码，读取位长
 	bit_index = 1
-
-	# DC 解码，读取四个字节
 	print "0 :", 
 	dc_bit, dc_amp = 0, 0
-	read_bytes = input_string[:8]
-	buffer = bin(int('1'+read_bytes, 16))[3:]
 	while bit_index <= 16:
 		these_bits_value = buffer[:bit_index]
 		if these_bits_value in huffman_DC_luminance_table_backward:
@@ -492,26 +491,26 @@ def get_decoded_from_bin(input_string, offset, datasize):
 			bit_index = 1
 			break
 		bit_index += 1
-	# DC解码 接着读取2字节
+	
+	# DC解码 读取振幅
 	this_dc_bin_value = buffer[:dc_bit]
 	print '-->' + this_dc_bin_value
 	buffer = buffer[dc_bit:]
 	dc_amp = calc_amplitude(this_dc_bin_value, dc_bit, mode = False, direction = False)
 	print "DC: ", dc_bit, dc_amp
 
-	# AC 解码，除去上面已经读取4个字节
-	read_bytes = input_string[8:]
-	buffer += bin(int('1'+read_bytes, 16))[3:]
+	# AC 解码 读取（跨越、位长、幅值）
 	l = len(buffer)
 	ac_bit = 0
 	ac_amp = 0
-	temp_counter = 1
+	zig_zag_counter = 1
 	is_found_EOB = False
 	while(l > 0 and not is_found_EOB):
-		if temp_counter == 64:
+		# 到达图像末尾64个像素
+		if zig_zag_counter == 64:
 			break
-		print temp_counter, ": ",
-		temp_counter += 1
+		print zig_zag_counter, ": ",
+		zig_zag_counter += 1
 
 		ac_bit = 0
 		bit_index = 1
@@ -530,22 +529,20 @@ def get_decoded_from_bin(input_string, offset, datasize):
 				buffer = buffer[bit_index:]
 				# 幅值
 				these_bits_value = buffer[:ac_bit]
-
 				print "-->" + these_bits_value
 				ac_amp = calc_amplitude(these_bits_value, ac_bit, mode=AC_MODE, direction=False)
 				# 截断
 				buffer = buffer[ac_bit:]
 				break
 			bit_index += 1
-
+		# 经过截断，buffer长度减少相应位数
 		l -= (ac_bit + bit_index)
 
 	print "\nremain:", buffer
 def test():
 
-	# test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
+	test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
 	# 已经0xff00替换为00
-	test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF1A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF"
 	get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
 	exit(0)
 	# 测试数据，来自P130上方
