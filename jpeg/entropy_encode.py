@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 16:28:23 >
+# Time-stamp: < entropy_encode.py 2016-05-13 16:47:20 >
 """
 熵编码
 """
@@ -477,8 +477,9 @@ def get_entropy_decode(input_list):
 
 # 从二进制流中读取出范式编码
 def get_decoded_from_bin(input_string, offset, datasize):
-	input_string_new = input_string.replace('FF00', 'FF')
-	buffer = bin(int('1' + input_string_new, 16))[3:]
+	# 替换FF00为FF的步骤不应该在本函数内实现，应交给IO读写实现
+	# input_string_new = input_string.replace('FF00', 'FF')
+	buffer = bin(int('1' + input_string, 16))[3:]
 	output_list = []
 	
 	# DC 解码，读取位长
@@ -551,10 +552,11 @@ def get_decoded_from_bin(input_string, offset, datasize):
 	return output_list
 def test():
 
-	# test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
-	# 已经0xff00替换为00
-	# print get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
-	# exit(0)
+	test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
+	# 已经0xff00替换为ff
+	test_bin = test_bin.replace("FF00", "FF")
+	print get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
+	exit(0)
 	# 测试数据，来自P130上方
 	test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
 	print "original:"
