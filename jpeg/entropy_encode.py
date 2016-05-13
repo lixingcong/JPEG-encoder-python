@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 16:47:20 >
+# Time-stamp: < entropy_encode.py 2016-05-13 17:12:36 >
 """
 熵编码
 """
@@ -439,8 +439,12 @@ def get_entropy_encode(input_list):
 	return output_list
 
 def get_encoded_to_bin(input_list):
+	output_bin = ''
+	# for
 	pass
-
+	
+	
+	
 # 熵解码
 def get_entropy_decode(input_list):
 	output_list = []
@@ -486,21 +490,22 @@ def get_decoded_from_bin(input_string, offset, datasize):
 	bit_index = 1
 	print "0 :", 
 	dc_bit, dc_amp = 0, 0
+	dc_bit_to_read = 0
 	while bit_index <= 16:
 		these_bits_value = buffer[:bit_index]
 		if these_bits_value in huffman_DC_luminance_table_backward:
 			print these_bits_value,
-			dc_bit = huffman_DC_luminance_table_backward[these_bits_value]
+			dc_bit = these_bits_value
+			dc_bit_to_read = huffman_DC_luminance_table_backward[dc_bit]
 			buffer = buffer[bit_index:]
 			bit_index = 1
 			break
 		bit_index += 1
 	
 	# DC解码 读取振幅
-	this_dc_bin_value = buffer[:dc_bit]
+	dc_amp = buffer[:dc_bit_to_read]
 	print '-->' + this_dc_bin_value
 	buffer = buffer[dc_bit:]
-	dc_amp = calc_amplitude(this_dc_bin_value, dc_bit, mode = False, direction = False)
 	print "DC: ", dc_bit, dc_amp
 	insert_item = (dc_bit, dc_amp)
 	output_list.append(insert_item)
@@ -528,24 +533,24 @@ def get_decoded_from_bin(input_string, offset, datasize):
 				print these_bits_value,
 				if these_bits_value == '1010':
 					is_found_EOB = True
+					insert_item = (these_bits_value, )
+					output_list.append(insert_item)
 					break
 				# 跨越/位长
-				ac_bit_ = huffman_AC_luminance_table_backward[these_bits_value]
-				zero_counter = ac_bit_ / 10
-				ac_bit = ac_bit_ %  10
+				ac_bit = these_bits_value
+				ac_bit_to_read = huffman_AC_luminance_table_backward[these_bits_value] % 10
 				# 截断
 				buffer = buffer[bit_index:]
 				# 幅值
-				these_bits_value = buffer[:ac_bit]
-				print "-->" + these_bits_value
-				ac_amp = calc_amplitude(these_bits_value, ac_bit, mode=AC_MODE, direction=False)
+				ac_amp = buffer[:ac_bit_to_read]
+				print "-->" + ac_amp
 				# 截断
 				buffer = buffer[ac_bit:]
 				break
 			bit_index += 1
 		# 经过截断，buffer长度减少相应位数
-		l -= (ac_bit + bit_index)
-		insert_item = (zero_counter, ac_bit, ac_amp)
+		l -= (ac_bit_to_read + bit_index)
+		insert_item = (ac_bit, ac_amp)
 		output_list.append(insert_item)
 	# 剩余无效的位数，一般少于8位，作为Padding
 	print "\nremain:", buffer
@@ -555,7 +560,10 @@ def test():
 	test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
 	# 已经0xff00替换为ff
 	test_bin = test_bin.replace("FF00", "FF")
-	print get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
+	decoded_bin = get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
+	print decoded_bin
+	# get_encoded_to_bin(decoded_bin)
+	
 	exit(0)
 	# 测试数据，来自P130上方
 	test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
