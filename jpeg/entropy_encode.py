@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 17:12:36 >
+# Time-stamp: < entropy_encode.py 2016-05-13 17:16:31 >
 """
 熵编码
 """
@@ -504,9 +504,10 @@ def get_decoded_from_bin(input_string, offset, datasize):
 	
 	# DC解码 读取振幅
 	dc_amp = buffer[:dc_bit_to_read]
-	print '-->' + this_dc_bin_value
-	buffer = buffer[dc_bit:]
-	print "DC: ", dc_bit, dc_amp
+	print '-->' + dc_amp
+	buffer = buffer[dc_bit_to_read:]
+	
+	# 直流写入到output
 	insert_item = (dc_bit, dc_amp)
 	output_list.append(insert_item)
 
@@ -524,16 +525,17 @@ def get_decoded_from_bin(input_string, offset, datasize):
 			break
 		print zig_zag_counter, ": ",
 		zig_zag_counter += 1
-
+		# 逐位读取buffer，最大读取步长为16
 		ac_bit = 0
 		bit_index = 1
 		while(bit_index <= 16):
 			these_bits_value = buffer[:bit_index]
 			if these_bits_value in huffman_AC_luminance_table_backward:
 				print these_bits_value,
+				# EOB写入
 				if these_bits_value == '1010':
 					is_found_EOB = True
-					insert_item = (these_bits_value, )
+					insert_item = ('1010', )
 					output_list.append(insert_item)
 					break
 				# 跨越/位长
@@ -545,7 +547,7 @@ def get_decoded_from_bin(input_string, offset, datasize):
 				ac_amp = buffer[:ac_bit_to_read]
 				print "-->" + ac_amp
 				# 截断
-				buffer = buffer[ac_bit:]
+				buffer = buffer[ac_bit_to_read:]
 				break
 			bit_index += 1
 		# 经过截断，buffer长度减少相应位数
