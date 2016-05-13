@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 18:00:02 >
+# Time-stamp: < entropy_encode.py 2016-05-13 18:42:59 >
 """
 熵编码
 """
@@ -408,6 +408,7 @@ def calc_amplitude(input_num, need_bit, mode = AC_MODE, direction = FORWARD):
 		return output_string
 
 # 熵编码
+# 输入一个RLE例如[(2,3),(3,4)...]输出[('100','00')...]
 def get_entropy_encode(input_list):
 	output_list = []
 	# DC 编码
@@ -438,7 +439,8 @@ def get_entropy_encode(input_list):
 
 	return output_list
 
-# 二进制编码，输入一个列表[('100','00')...]，输出码流类似'ffab3324'，
+# 二进制编码
+# 输入一个列表[('100','00')...]，输出码流类似'ffab3324'，
 def get_encoded_to_hex(input_list):
 	output_bin = ''
 	buffer = ''
@@ -466,6 +468,7 @@ def get_encoded_to_hex(input_list):
 	return final_result
 
 # 熵解码
+# 输入一个[('100','00')...]，输出RLE例如[(2,3),(3,4)...]
 def get_entropy_decode(input_list):
 	output_list = []
 	# DC 编码
@@ -499,7 +502,8 @@ def get_entropy_decode(input_list):
 
 	return output_list
 
-# 从二进制流中读取出范式编码，输入一个字符串"ff329900"，输出列表[('1001',''0030')...]
+# 从二进制流中读取出范式编码
+# 输入一个字符串"ff329900"，输出列表[('1001',''0030')...]
 def get_decoded_from_hex(input_string, offset, datasize):
 	# 替换FF00为FF的步骤不应该在本函数内实现，应交给IO读写实现
 	# input_string_new = input_string.replace('FF00', 'FF')
@@ -571,33 +575,51 @@ def get_decoded_from_hex(input_string, offset, datasize):
 	# 剩余无效的位数，一般少于8位，作为Padding
 	print "remain the last bits:", buffer
 	return output_list
-def test():
 
-	test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
-	# 已经0xff00替换为ff
-	test_hex = test_hex.replace("FF00", "FF")
-	print "original:"
-	print test_hex
-	decoded_hex = get_decoded_from_hex(test_hex, offset=0, datasize=len(test_hex))
-	print "decoded:"
-	print decoded_hex
-	print "encoded:"
-	print get_encoded_to_hex(decoded_hex)
-	
-	exit(0)
+def test1():
 	# 测试数据，来自P130上方
 	test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
 	print "original:"
 	print test_list
-	print "#" * 10
+	print "-" * 10
 	# 编码
 	encoded = get_entropy_encode(test_list)
 	print "encoded:"
 	print encoded
 	# 解码
-	print "#" * 10
+	print "-" * 10
 	print "decoded:"
 	print get_entropy_decode(encoded)
 
+def test2():
+	# 测试对十六进制的读写，囊括所有的转码
+	test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
+	# 把0xff00替换为ff
+	test_hex = test_hex.replace("FF00", "FF")
+
+	print "-" * 10
+	print "original:"
+	print test_hex
+
+	print "-" * 10
+	decoded_hex = get_decoded_from_hex(test_hex, offset=0, datasize=len(test_hex))
+	print "decoded to bin:"
+	print decoded_hex
+
+	print "-" * 10
+	print "decode to RLE:"
+	decoded_hex_RLE = get_entropy_decode(decoded_hex)
+	print decoded_hex_RLE
+
+	print "-" * 10
+	print "encoded to bin:"
+	encoded_hex = get_entropy_encode(decoded_hex_RLE)
+	print encoded_hex
+
+	print "-" * 10
+	print "encode to hex stream:"
+	print get_encoded_to_hex(encoded_hex)
+
 if __name__ == '__main__':
-	test()
+	# test1()
+	test2()
