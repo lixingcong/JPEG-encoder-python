@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 18:42:59 >
+# Time-stamp: < entropy_encode.py 2016-05-13 21:07:14 >
 """
 熵编码
 """
@@ -504,76 +504,103 @@ def get_entropy_decode(input_list):
 
 # 从二进制流中读取出范式编码
 # 输入一个字符串"ff329900"，输出列表[('1001',''0030')...]
-def get_decoded_from_hex(input_string, offset, datasize):
+def get_decoded_from_hex(input_string, is_debug=False):
 	# 替换FF00为FF的步骤不应该在本函数内实现，应交给IO读写实现
 	# input_string_new = input_string.replace('FF00', 'FF')
 	buffer = bin(int('1' + input_string, 16))[3:]
 	output_list = []
-
-	# DC 解码，读取位长
-	bit_index = 1
-	dc_bit, dc_amp = 0, 0
-	dc_bit_to_read = 0
-	while bit_index <= 16:
-		these_bits_value = buffer[:bit_index]
-		if these_bits_value in huffman_DC_luminance_table_backward:
-			dc_bit = these_bits_value
-			dc_bit_to_read = huffman_DC_luminance_table_backward[dc_bit]
-			buffer = buffer[bit_index:]
-			bit_index = 1
-			break
-		bit_index += 1
-
-	# DC解码 读取振幅
-	dc_amp = buffer[:dc_bit_to_read]
-	buffer = buffer[dc_bit_to_read:]
-
-	# 直流写入到output
-	insert_item = (dc_bit, dc_amp)
-	output_list.append(insert_item)
-
-	# AC 解码 读取（跨越、位长、幅值）
-	zero_counter = 0
-	ac_bit = 0
-	ac_amp = 0
-	# 循环中止的变量
-	zig_zag_counter = 1
-	is_found_EOB = False
-	l = len(buffer)
-	while(l > 0 and not is_found_EOB):
-		# 到达图像末尾64个像素
-		if zig_zag_counter == 64:
-			break
-		zig_zag_counter += 1
-		# 逐位读取buffer，最大读取步长为16
-		ac_bit = 0
+	len_buffer = len(buffer)
+	current_pos = 0
+	block_num = 1
+	# 遍历所有位
+	while(current_pos < len_buffer):
+		if is_debug:print "-----------\nNow i am in block #%d" % block_num
+		block_num += 1
+		# DC
 		bit_index = 1
-		while(bit_index <= 16):
+		dc_bit, dc_amp = 0, 0
+		bits_to_read = 0
+		# 读取位长，最大扫描16位
+		while bit_index < 16:
 			these_bits_value = buffer[:bit_index]
-			if these_bits_value in huffman_AC_luminance_table_backward:
-				# EOB写入
-				if these_bits_value == '1010':
-					is_found_EOB = True
-					insert_item = ('1010', )
-					output_list.append(insert_item)
-					break
-				# 跨越/位长
-				ac_bit = these_bits_value
-				ac_bit_to_read = huffman_AC_luminance_table_backward[these_bits_value] % 10
+			if these_bits_value in huffman_DC_luminance_table_forward:
+				dc_bit = these_bits_value
+				# 查表得到位长
+				bits_to_read = huffman_DC_luminance_table_backward[dc_bit]
 				# 截断
 				buffer = buffer[bit_index:]
-				# 幅值
-				ac_amp = buffer[:ac_bit_to_read]
-				# 截断
-				buffer = buffer[ac_bit_to_read:]
+				# 更新current指针
+				current_pos += bit_index
 				break
 			bit_index += 1
-		# 经过截断，buffer长度减少相应位数
-		l -= (ac_bit_to_read + bit_index)
-		insert_item = (ac_bit, ac_amp)
+			
+		# DC解码 读取振幅，向前读取位长
+		dc_amp = buffer[:bits_to_read]
+		buffer = buffer[bits_to_read:]
+		# 更新current指针
+		current_pos += bits_to_read
+
+		# 直流写入到output
+		insert_item = (dc_bit, dc_amp)
 		output_list.append(insert_item)
-	# 剩余无效的位数，一般少于8位，作为Padding
-	print "remain the last bits:", buffer
+		if is_debug:print "DC:", insert_item
+
+		# AC
+		# 读取（跨越、位长、幅值）
+		zero_counter = 0
+		ac_bit = 0
+		ac_amp = 0
+		# 循环中止的变量
+		zig_zag_counter = 1
+		is_found_EOB = False
+		is_this_block_ended = False
+		while zig_zag_counter < 64 and not is_this_block_ended:
+			if is_debug:print "pixel #" + str(zig_zag_counter), 
+			# 复位bit指针
+			bit_index = 1
+			bits_to_read = 0
+			# 逐位读取，最大读取16bit
+			while bit_index <= 16:
+				these_bits_value = buffer[:bit_index]
+				if these_bits_value in huffman_AC_luminance_table_backward:
+					# 如果是EOB
+					if these_bits_value == '1010':
+						# 更新中止标识
+						is_found_EOB = True
+						is_this_block_ended = True
+						# 截断buffer
+						buffer = buffer[bit_index:]
+						# 插入EOB进结果
+						insert_item = ('1010', )
+						if is_debug:print insert_item
+						output_list.append(insert_item)
+						break
+					# 如果是其它跨越/位长
+					ac_bit = these_bits_value
+					# 截断
+					buffer = buffer[bit_index:]
+					bits_to_read = huffman_AC_luminance_table_backward[ac_bit] % 10
+					# 读取幅值
+					ac_amp = buffer[:bits_to_read]
+					# 截断
+					buffer = buffer[bits_to_read:]
+					break
+						
+				bit_index += 1
+			# 下一个zig
+			zig_zag_counter += 1
+			# 更新current指针
+			current_pos += (bit_index + bits_to_read)
+			# 插入除了EOB的码字
+			if not is_found_EOB:
+				insert_item = (ac_bit, ac_amp)
+				if is_debug:print insert_item
+				output_list.append(insert_item)
+		
+		# 遍历完所有MCU停止的条件之一是padding位不超过8
+		if len_buffer - current_pos < 8:
+			break
+	if is_debug:print "-------\nremain bits:", buffer, '\n-------'
 	return output_list
 
 def test1():
@@ -592,19 +619,23 @@ def test1():
 	print get_entropy_decode(encoded)
 
 def test2():
-	# 测试对十六进制的读写，囊括所有的转码
+	测试对十六进制的读写，囊括所有的转码
 	test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
+	# 包含两个block的数据
+	test_hex = "FE8D7E1A7C00B1F08F87F4CF0D6950DE49A6E9AD78D6DF6E9DAEAE337D7F77A8CFBE6645DC05CDE4C22508AB1C4238D46D415F23FF00C161FF00E0A59F02BF663FD907C73E18F827F147C3FE2FF8F7F16DAFFE19F82D7C1C1FC45A6F87B4C17B0E9DF13BC4D75E23B30BA0C573A36832DF785F458F4CD5AF75EB7F1BEBBA36A10E95268DE1FF00156A5A17"
 	# 把0xff00替换为ff
 	test_hex = test_hex.replace("FF00", "FF")
 
 	print "-" * 10
 	print "original:"
-	print test_hex
+	# print test_hex
 
 	print "-" * 10
-	decoded_hex = get_decoded_from_hex(test_hex, offset=0, datasize=len(test_hex))
+	decoded_hex = get_decoded_from_hex(test_hex, is_debug=True)
 	print "decoded to bin:"
 	print decoded_hex
+
+	exit(0)
 
 	print "-" * 10
 	print "decode to RLE:"
