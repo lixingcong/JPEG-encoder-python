@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 21:50:59 >
+# Time-stamp: < entropy_encode.py 2016-05-13 22:00:00 >
 """
 熵编码
 """
@@ -411,32 +411,34 @@ def calc_amplitude(input_num, need_bit, mode = AC_MODE, direction = FORWARD):
 # 输入一个RLE例如[(2,3),(3,4)...]输出[('100','00')...]
 def get_entropy_encode(input_list):
 	output_list = []
-	# DC 编码
-	dc_bit = input_list[0][0]
-	dc_amp = input_list[0][1]
-	# 查表
-	(dc_bit, dc_amp) = (huffman_DC_luminance_table_forward[dc_bit], calc_amplitude(dc_amp, dc_bit, "DC"))
-	insert_item = (dc_bit, dc_amp)
-	output_list.append(insert_item)
-
-	# AC 编码
-	for ac_item in input_list[1:]:
-		# EOB编码
-		if ac_item[0] == 0 and ac_item[1] == 0:
-			EOB = ("1010",)
-			output_list.append(EOB)
-			break
-		ac_zero_counter = ac_item[0]
-		ac_bit = ac_item[1]
-		# 由(跨越/位长)得出查表位置=跨越*10+位长
-		position_in_huffman_table = ac_zero_counter * 10 + ac_bit
-		ac_amp = ac_item[2]
-		ac_amp = calc_amplitude(ac_amp, ac_bit)
-		# 通过(跨越/位长)来查表
-		coefficient = huffman_AC_luminance_table_forward[position_in_huffman_table]
-		insert_item = (coefficient, ac_amp)
+	# 对每个block进行编码
+	for each_block in input_list:
+		# DC 编码
+		dc_bit = each_block[0][0]
+		dc_amp = each_block[0][1]
+		# 查DC表
+		(dc_bit, dc_amp) = (huffman_DC_luminance_table_forward[dc_bit], calc_amplitude(dc_amp, dc_bit, "DC"))
+		insert_item = (dc_bit, dc_amp)
 		output_list.append(insert_item)
-
+		
+		# AC 编码
+		for ac_item in each_block[1:]:
+			# EOB编码
+			if ac_item[0] == 0 and ac_item[1] == 0:
+				EOB = ("1010",)
+				output_list.append(EOB)
+			else:
+				ac_zero_counter = ac_item[0]
+				ac_bit = ac_item[1]
+				# 由(跨越/位长)得出查表位置=跨越*10+位长
+				position_in_huffman_table = ac_zero_counter * 10 + ac_bit
+				ac_amp = ac_item[2]
+				ac_amp = calc_amplitude(ac_amp, ac_bit)
+				# 通过(跨越/位长)来查表
+				coefficient = huffman_AC_luminance_table_forward[position_in_huffman_table]
+				insert_item = (coefficient, ac_amp)
+				output_list.append(insert_item)
+		
 	return output_list
 
 # 二进制编码
@@ -488,7 +490,6 @@ def get_entropy_decode(input_list):
 			is_coded_DC = False
 		
 		counter_less_than_64 += 1
-		print counter_less_than_64
 
 		# 如果tuple元素只有一个'1010'，即EOB
 		if len(i) == 1:
@@ -653,7 +654,7 @@ def test2():
 
 	print "-" * 10
 	print "original:"
-	# print test_hex
+	print test_hex
 
 	print "-" * 10
 	decoded_hex = get_decoded_from_hex(test_hex, is_debug=False)
@@ -661,18 +662,18 @@ def test2():
 	print decoded_hex
 
 	print "-" * 10
-	print "decode to RLE:"
+	print "decode to RLE:(maybe has multi blocks!)"
 	decoded_hex_RLE = get_entropy_decode(decoded_hex)
 	for i in decoded_hex_RLE:
 		print i
 
-	exit(0)
 
 	print "-" * 10
 	print "encoded to bin:"
 	encoded_hex = get_entropy_encode(decoded_hex_RLE)
 	print encoded_hex
-
+	
+	
 	print "-" * 10
 	print "encode to hex stream:"
 	print get_encoded_to_hex(encoded_hex)
