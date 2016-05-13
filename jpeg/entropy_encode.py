@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 17:16:31 >
+# Time-stamp: < entropy_encode.py 2016-05-13 18:00:02 >
 """
 熵编码
 """
@@ -438,13 +438,33 @@ def get_entropy_encode(input_list):
 
 	return output_list
 
-def get_encoded_to_bin(input_list):
+# 二进制编码，输入一个列表[('100','00')...]，输出码流类似'ffab3324'，
+def get_encoded_to_hex(input_list):
 	output_bin = ''
-	# for
-	pass
-	
-	
-	
+	buffer = ''
+	# 逐位拼接
+	for i in input_list:
+		# EOB写入
+		if len(i) == 1:
+			buffer += '1010'
+			break
+		buffer += (i[0] + i[1])
+		# 四个字节的倍数可以暂时转换一下成为hex
+		if (len(buffer) % 32) == 0:
+			this_hex = (hex(int('0b' + buffer, 2)))[2:]
+			output_bin += (this_hex[:-1] if this_hex[-1] == 'L' else this_hex)
+			buffer = ''
+	# 剩余位的处理方法
+	l = len(buffer)
+	if (l % 8) != 0:
+		buffer += '1' * (8 - l % 8)
+	# 再转一个hex
+	output_bin += (hex(int('0b' + buffer, 2)))[2:]
+	final_result = (output_bin[:-1] if output_bin[-1] == "L" else output_bin)
+	# print final_result
+	# print bin(int('1' + final_result, 16))[3:]
+	return final_result
+
 # 熵解码
 def get_entropy_decode(input_list):
 	output_list = []
@@ -479,34 +499,31 @@ def get_entropy_decode(input_list):
 
 	return output_list
 
-# 从二进制流中读取出范式编码
-def get_decoded_from_bin(input_string, offset, datasize):
+# 从二进制流中读取出范式编码，输入一个字符串"ff329900"，输出列表[('1001',''0030')...]
+def get_decoded_from_hex(input_string, offset, datasize):
 	# 替换FF00为FF的步骤不应该在本函数内实现，应交给IO读写实现
 	# input_string_new = input_string.replace('FF00', 'FF')
 	buffer = bin(int('1' + input_string, 16))[3:]
 	output_list = []
-	
+
 	# DC 解码，读取位长
 	bit_index = 1
-	print "0 :", 
 	dc_bit, dc_amp = 0, 0
 	dc_bit_to_read = 0
 	while bit_index <= 16:
 		these_bits_value = buffer[:bit_index]
 		if these_bits_value in huffman_DC_luminance_table_backward:
-			print these_bits_value,
 			dc_bit = these_bits_value
 			dc_bit_to_read = huffman_DC_luminance_table_backward[dc_bit]
 			buffer = buffer[bit_index:]
 			bit_index = 1
 			break
 		bit_index += 1
-	
+
 	# DC解码 读取振幅
 	dc_amp = buffer[:dc_bit_to_read]
-	print '-->' + dc_amp
 	buffer = buffer[dc_bit_to_read:]
-	
+
 	# 直流写入到output
 	insert_item = (dc_bit, dc_amp)
 	output_list.append(insert_item)
@@ -523,7 +540,6 @@ def get_decoded_from_bin(input_string, offset, datasize):
 		# 到达图像末尾64个像素
 		if zig_zag_counter == 64:
 			break
-		print zig_zag_counter, ": ",
 		zig_zag_counter += 1
 		# 逐位读取buffer，最大读取步长为16
 		ac_bit = 0
@@ -531,7 +547,6 @@ def get_decoded_from_bin(input_string, offset, datasize):
 		while(bit_index <= 16):
 			these_bits_value = buffer[:bit_index]
 			if these_bits_value in huffman_AC_luminance_table_backward:
-				print these_bits_value,
 				# EOB写入
 				if these_bits_value == '1010':
 					is_found_EOB = True
@@ -545,7 +560,6 @@ def get_decoded_from_bin(input_string, offset, datasize):
 				buffer = buffer[bit_index:]
 				# 幅值
 				ac_amp = buffer[:ac_bit_to_read]
-				print "-->" + ac_amp
 				# 截断
 				buffer = buffer[ac_bit_to_read:]
 				break
@@ -555,16 +569,20 @@ def get_decoded_from_bin(input_string, offset, datasize):
 		insert_item = (ac_bit, ac_amp)
 		output_list.append(insert_item)
 	# 剩余无效的位数，一般少于8位，作为Padding
-	print "\nremain:", buffer
+	print "remain the last bits:", buffer
 	return output_list
 def test():
 
-	test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
+	test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
 	# 已经0xff00替换为ff
-	test_bin = test_bin.replace("FF00", "FF")
-	decoded_bin = get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
-	print decoded_bin
-	# get_encoded_to_bin(decoded_bin)
+	test_hex = test_hex.replace("FF00", "FF")
+	print "original:"
+	print test_hex
+	decoded_hex = get_decoded_from_hex(test_hex, offset=0, datasize=len(test_hex))
+	print "decoded:"
+	print decoded_hex
+	print "encoded:"
+	print get_encoded_to_hex(decoded_hex)
 	
 	exit(0)
 	# 测试数据，来自P130上方
