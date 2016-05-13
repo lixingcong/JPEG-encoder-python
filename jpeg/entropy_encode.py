@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 16:10:33 >
+# Time-stamp: < entropy_encode.py 2016-05-13 16:28:23 >
 """
 熵编码
 """
@@ -419,7 +419,12 @@ def get_entropy_encode(input_list):
 	output_list.append(insert_item)
 
 	# AC 编码
-	for ac_item in input_list[1:-1]:
+	for ac_item in input_list[1:]:
+		# EOB编码
+		if ac_item[0] == 0 and ac_item[1] == 0:
+			EOB = ("1010",)
+			output_list.append(EOB)
+			break
 		ac_zero_counter = ac_item[0]
 		ac_bit = ac_item[1]
 		# 由(跨越/位长)得出查表位置=跨越*10+位长
@@ -430,10 +435,6 @@ def get_entropy_encode(input_list):
 		coefficient = huffman_AC_luminance_table_forward[position_in_huffman_table]
 		insert_item = (coefficient, ac_amp)
 		output_list.append(insert_item)
-
-	# EOB编码
-	EOB = ("1010",)
-	output_list.append(EOB)
 
 	return output_list
 
@@ -453,7 +454,12 @@ def get_entropy_decode(input_list):
 	output_list.append(insert_item)
 
 	# AC解码
-	for ac_item in input_list[1:-1]:
+	for ac_item in input_list[1:]:
+		# 如果tuple元素只有一个'1010'，即EOB
+		if len(ac_item) == 1:
+			EOB = (0, 0)
+			output_list.append(EOB)
+			break
 		# 查表看到对应的十进制数
 		coefficient = ac_item[0]
 		ac_zero_counter_and_bit = huffman_AC_luminance_table_backward[coefficient]
@@ -467,13 +473,9 @@ def get_entropy_decode(input_list):
 		insert_item = (ac_zero_counter, ac_bit, ac_amp)
 		output_list.append(insert_item)
 
-	# EOB编码
-	EOB = (0, 0)
-	output_list.append(EOB)
-
 	return output_list
 
-# TODO 替换0xff00为0xff
+# 从二进制流中读取出范式编码
 def get_decoded_from_bin(input_string, offset, datasize):
 	input_string_new = input_string.replace('FF00', 'FF')
 	buffer = bin(int('1' + input_string_new, 16))[3:]
@@ -549,10 +551,10 @@ def get_decoded_from_bin(input_string, offset, datasize):
 	return output_list
 def test():
 
-	test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
+	# test_bin="FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
 	# 已经0xff00替换为00
-	print get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
-	exit(0)
+	# print get_decoded_from_bin(test_bin, offset=0, datasize=len(test_bin))
+	# exit(0)
 	# 测试数据，来自P130上方
 	test_list = [(2, 3), (1, 2, -2), (0, 1, -1), (0, 1, -1), (0, 1, -1), (2, 1, -1), (0, 0)]
 	print "original:"
