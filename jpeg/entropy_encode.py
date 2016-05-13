@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 21:16:20 >
+# Time-stamp: < entropy_encode.py 2016-05-13 21:50:59 >
 """
 熵编码
 """
@@ -472,35 +472,59 @@ def get_encoded_to_hex(input_list):
 # 输入一个[('100','00')...]，输出RLE例如[(2,3),(3,4)...]
 def get_entropy_decode(input_list):
 	output_list = []
-	# DC 编码
-	dc_bit = input_list[0][0]
-	dc_amp = input_list[0][1]
-	# 求直流分量的位长
-	dc_bit = huffman_DC_luminance_table_backward[dc_bit]
-	dc_amp = calc_amplitude(dc_amp, dc_bit, mode = False, direction = False)
-	insert_item = (dc_bit, dc_amp)
-	output_list.append(insert_item)
+	each_block = []
+	counter_less_than_64 = 0
+	is_found_EOB = False
+	is_coded_DC = False
+	block_num = 1
+	for i in input_list:
+		if counter_less_than_64 >= 64 or is_found_EOB:
+			# 将当前block加入到列表中
+			output_list.append(each_block)
+			each_block = []
+			# 复位状态
+			counter_less_than_64 = 0
+			is_found_EOB = False
+			is_coded_DC = False
+		
+		counter_less_than_64 += 1
+		print counter_less_than_64
 
-	# AC解码
-	for ac_item in input_list[1:]:
 		# 如果tuple元素只有一个'1010'，即EOB
-		if len(ac_item) == 1:
+		if len(i) == 1:
 			EOB = (0, 0)
-			output_list.append(EOB)
-			break
+			each_block.append(EOB)
+			is_found_EOB = True
+			continue
+
+		if not is_coded_DC:
+			# DC编码
+			dc_bit = i[0]
+			dc_amp = i[1]
+			# DC位长
+			dc_bit = huffman_DC_luminance_table_backward[dc_bit]
+			dc_amp = calc_amplitude(dc_amp, dc_bit, mode = False, direction = False)
+			insert_item = (dc_bit, dc_amp)
+			each_block.append(insert_item)
+			is_coded_DC = True
+			continue
+
+		# AC解码
 		# 查表看到对应的十进制数
-		coefficient = ac_item[0]
+		coefficient = i[0]
 		ac_zero_counter_and_bit = huffman_AC_luminance_table_backward[coefficient]
 		# 由(跨越/位长)得出查表位置=跨越*10+位长
 		ac_zero_counter = ac_zero_counter_and_bit / 10
 		ac_bit = ac_zero_counter_and_bit % 10
 		# 计算幅值
-		ac_amp = ac_item[1]
+		ac_amp = i[1]
 		ac_amp = calc_amplitude(ac_amp, ac_bit, mode = AC_MODE, direction = False)
 
 		insert_item = (ac_zero_counter, ac_bit, ac_amp)
-		output_list.append(insert_item)
-
+		each_block.append(insert_item)
+		
+	# 最后一个列表要加进去
+	output_list.append(each_block)
 	return output_list
 
 # 从二进制流中读取出范式编码
@@ -632,25 +656,25 @@ def test2():
 	# print test_hex
 
 	print "-" * 10
-	decoded_hex = get_decoded_from_hex(test_hex, is_debug=True)
+	decoded_hex = get_decoded_from_hex(test_hex, is_debug=False)
 	print "decoded to bin:"
 	print decoded_hex
 
-	# exit(0)
+	print "-" * 10
+	print "decode to RLE:"
+	decoded_hex_RLE = get_entropy_decode(decoded_hex)
+	for i in decoded_hex_RLE:
+		print i
 
-	# print "-" * 10
-	# print "decode to RLE:"
-	# decoded_hex_RLE = get_entropy_decode(decoded_hex)
-	# print decoded_hex_RLE
+	exit(0)
 
-	# print "-" * 10
-	# print "encoded to bin:"
-	# encoded_hex = get_entropy_encode(decoded_hex_RLE)
-	# print encoded_hex
+	print "-" * 10
+	print "encoded to bin:"
+	encoded_hex = get_entropy_encode(decoded_hex_RLE)
+	print encoded_hex
 
 	print "-" * 10
 	print "encode to hex stream:"
-	encoded_hex = decoded_hex
 	print get_encoded_to_hex(encoded_hex)
 
 if __name__ == '__main__':
