@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 21:07:14 >
+# Time-stamp: < entropy_encode.py 2016-05-13 21:16:20 >
 """
 熵编码
 """
@@ -449,8 +449,9 @@ def get_encoded_to_hex(input_list):
 		# EOB写入
 		if len(i) == 1:
 			buffer += '1010'
-			break
-		buffer += (i[0] + i[1])
+		# 普通码字
+		else:
+			buffer += (i[0] + i[1])
 		# 四个字节的倍数可以暂时转换一下成为hex
 		if (len(buffer) % 32) == 0:
 			this_hex = (hex(int('0b' + buffer, 2)))[2:]
@@ -619,8 +620,8 @@ def test1():
 	print get_entropy_decode(encoded)
 
 def test2():
-	测试对十六进制的读写，囊括所有的转码
-	test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
+	# 测试对十六进制的读写，囊括所有的转码
+	# test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
 	# 包含两个block的数据
 	test_hex = "FE8D7E1A7C00B1F08F87F4CF0D6950DE49A6E9AD78D6DF6E9DAEAE337D7F77A8CFBE6645DC05CDE4C22508AB1C4238D46D415F23FF00C161FF00E0A59F02BF663FD907C73E18F827F147C3FE2FF8F7F16DAFFE19F82D7C1C1FC45A6F87B4C17B0E9DF13BC4D75E23B30BA0C573A36832DF785F458F4CD5AF75EB7F1BEBBA36A10E95268DE1FF00156A5A17"
 	# 把0xff00替换为ff
@@ -635,20 +636,21 @@ def test2():
 	print "decoded to bin:"
 	print decoded_hex
 
-	exit(0)
+	# exit(0)
 
-	print "-" * 10
-	print "decode to RLE:"
-	decoded_hex_RLE = get_entropy_decode(decoded_hex)
-	print decoded_hex_RLE
+	# print "-" * 10
+	# print "decode to RLE:"
+	# decoded_hex_RLE = get_entropy_decode(decoded_hex)
+	# print decoded_hex_RLE
 
-	print "-" * 10
-	print "encoded to bin:"
-	encoded_hex = get_entropy_encode(decoded_hex_RLE)
-	print encoded_hex
+	# print "-" * 10
+	# print "encoded to bin:"
+	# encoded_hex = get_entropy_encode(decoded_hex_RLE)
+	# print encoded_hex
 
 	print "-" * 10
 	print "encode to hex stream:"
+	encoded_hex = decoded_hex
 	print get_encoded_to_hex(encoded_hex)
 
 if __name__ == '__main__':
