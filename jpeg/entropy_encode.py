@@ -424,15 +424,15 @@ def get_entropy_encode(input_list):
 			insert_item = (dc_bit, dc_amp)
 		else:
 			dc_bit = huffman_DC_luminance_table_forward[dc_bit]
-			insert_item = (dc_bit, )
+			insert_item = (dc_bit,)
 		output_list.append(insert_item)
-		
+
 		# AC 编码
 		for ac_item in each_block[1:]:
 			if len(ac_item) == 2:
 				# RLZ编码
 				if ac_item[0] == 15 and ac_item[1] == 0:
-					insert_item = ('11111111001', )
+					insert_item = ('11111111001',)
 					output_list.append(insert_item)
 				# EOB编码
 				elif ac_item[0] == 0 and ac_item[1] == 0:
@@ -450,7 +450,7 @@ def get_entropy_encode(input_list):
 				coefficient = huffman_AC_luminance_table_forward[position_in_huffman_table]
 				insert_item = (coefficient, ac_amp)
 				output_list.append(insert_item)
-		
+
 	return output_list
 
 # 二进制编码
@@ -503,7 +503,7 @@ def get_entropy_decode(input_list):
 			counter_less_than_64 = 0
 			is_found_EOB = False
 			is_coded_DC = False
-		
+
 		counter_less_than_64 += 1
 
 		# 如果tuple元素只有一个'1010'，即EOB
@@ -519,7 +519,7 @@ def get_entropy_decode(input_list):
 				continue
 			elif not is_coded_DC and i[0] == '00':
 				# DC解码
-				insert_item = (0, )
+				insert_item = (0,)
 				each_block.append(insert_item)
 				is_coded_DC = True
 				continue
@@ -553,14 +553,14 @@ def get_entropy_decode(input_list):
 
 		insert_item = (ac_zero_counter, ac_bit, ac_amp)
 		each_block.append(insert_item)
-		
+
 	# 最后一个列表要加进去
 	output_list.append(each_block)
 	return output_list
 
 # 从二进制流中读取出范式编码
 # 输入一个字符串"ff329900"，输出列表[('1001',''0030')...]
-def get_decoded_from_hex(input_string, is_debug=False):
+def get_decoded_from_hex(input_string, is_debug = False):
 	# 替换FF00为FF的步骤不应该在本函数内实现，应交给IO读写实现
 	# input_string_new = input_string.replace('FF00', 'FF')
 	buffer = bin(int('1' + input_string, 16))[3:]
@@ -579,7 +579,7 @@ def get_decoded_from_hex(input_string, is_debug=False):
 		bits_to_read = 0
 		# 读取位长，最大扫描16位
 		if is_debug:
-			print "DC blocks to find:", 
+			print "DC blocks to find:",
 			print "\n " + buffer[:32]
 		while bit_index < 16:
 			these_bits_value = buffer[:bit_index]
@@ -596,7 +596,7 @@ def get_decoded_from_hex(input_string, is_debug=False):
 			bit_index += 1
 
 		if dc_bit == '':
-			print "DC not found!!!!"
+			print "DC value is not in huffman table!!!!\nMaybe DHT was not normalized or this jpg has been optimized."
 			exit(1)
 
 		# 直流分量位长为非0才进行读取
@@ -608,8 +608,8 @@ def get_decoded_from_hex(input_string, is_debug=False):
 			# 更新current指针
 			current_pos += bits_to_read
 		else:
-			insert_item = (dc_bit, )
-			
+			insert_item = (dc_bit,)
+
 		# 直流写入到output
 		output_list.append(insert_item)
 		if is_debug:
@@ -628,12 +628,12 @@ def get_decoded_from_hex(input_string, is_debug=False):
 		is_found_EOB = False
 		is_this_block_ended = False
 		while zig_zag_counter < 64 and not is_this_block_ended:
-			if is_debug:print "pixel #" + str(zig_zag_counter), 
+			if is_debug:print "pixel #" + str(zig_zag_counter),
 			# 复位bit指针
 			bit_index = 1
 			bits_to_read = 0
 			if is_debug:
-				print "AC blocks to find: (32b))", 
+				print "AC blocks to find: (32b))",
 				print "\n " + buffer[:32]
 			# 逐位读取，最大读取16bit
 			while bit_index <= 16:
@@ -659,7 +659,7 @@ def get_decoded_from_hex(input_string, is_debug=False):
 					# 截断
 					buffer = buffer[bit_index:]
 					bits_to_read = huffman_AC_luminance_table_backward[ac_bit] % 10
-					
+
 					# 余数0即为10对应A
 					if bits_to_read == 0:
 						bits_to_read = 10
@@ -671,7 +671,7 @@ def get_decoded_from_hex(input_string, is_debug=False):
 					# 截断
 					buffer = buffer[bits_to_read:]
 					break
-						
+
 				bit_index += 1
 			# 下一个zig
 			zig_zag_counter += 1
@@ -681,7 +681,7 @@ def get_decoded_from_hex(input_string, is_debug=False):
 			if bits_to_read != 0:
 				insert_item = (ac_bit, ac_amp)
 			else:
-				insert_item = (ac_bit, )
+				insert_item = (ac_bit,)
 			# 输出调试结果
 			if is_debug:
 				if bits_to_read != 0:
@@ -689,8 +689,8 @@ def get_decoded_from_hex(input_string, is_debug=False):
 				else:
 					print ac_bit
 			output_list.append(insert_item)
-				
-		
+
+
 		# 遍历完所有MCU停止的条件之一是padding位不超过8
 		if len_buffer - current_pos < 8:
 			break
@@ -719,16 +719,16 @@ def test2():
 	# test_hex = "FE8D7E1A7C00B1F08F87F4CF0D6950DE49A6E9AD78D6DF6E9DAEAE337D7F77A8CFBE6645DC05CDE4C22508AB1C4238D46D415F23FF00C161FF00E0A59F02BF663FD907C73E18F827F147C3FE2FF8F7F16DAFFE19F82D7C1C1FC45A6F87B4C17B0E9DF13BC4D75E23B30BA0C573A36832DF785F458F4CD5AF75EB7F1BEBBA36A10E95268DE1FF00156A5A17"
 	# 把0xff00替换为ff
 	# test_hex = test_hex.replace("FF00", "FF")
-	test_hex=''
-	with open('/tmp/2.bin','rb') as f:
-		test_hex=f.read().encode('hex')
+	test_hex = ''
+	with open('/tmp/2.bin', 'rb') as f:
+		test_hex = f.read().encode('hex')
 
 	print "-" * 10
 	print "original:"
 	print test_hex
 
 	print "-" * 10
-	decoded_hex = get_decoded_from_hex(test_hex, is_debug=False)
+	decoded_hex = get_decoded_from_hex(test_hex, is_debug = False)
 	print "decoded to bin:"
 	print decoded_hex
 
@@ -743,8 +743,8 @@ def test2():
 	print "encoded to bin:"
 	encoded_hex = get_entropy_encode(decoded_hex_RLE)
 	print encoded_hex
-	
-	
+
+
 	print "-" * 10
 	print "encode to hex stream:"
 	final = get_encoded_to_hex(encoded_hex)

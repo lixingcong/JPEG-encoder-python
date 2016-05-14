@@ -13,6 +13,8 @@ import dc_ac_encode
 import entropy_encode
 import numpy as np
 import struct
+import io_jpg
+import io_bmp
 
 from quantize import FORWARD
 from quantize import LUMINANCE
@@ -60,15 +62,17 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 	# 熵解码
 	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex, is_debug = False)
 	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin)
+
 	# 对每一个MCU块进行解码
 	for block in entropy_decoded_blocks:
 		# DC AC解码
 		decoded_dc_ac = dc_ac_encode.DC_AC_decode(block, previous_DC_value)
-				# zig-zag还原成8x8矩阵
+		# zig-zag还原成8x8矩阵
 		result_zig_zag = zig_zag_scan.restore_matrix_from_1x64(decoded_dc_ac)
 
 		# 反量化
 		table_unquantized = quantize.get_quantisation(result_zig_zag, quantize_table, False)
+
 		# 逆DCT变换
 		IDCT_table = dct.inverse_dct(table_unquantized)
 		# 限幅
@@ -83,6 +87,7 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 		# 更新DC值
 		previous_DC_value = result_zig_zag[0, 0]
 
+
 	# 合并前计算padded尺寸
 	width_padded, height_padded = block_split.calc_new_size(width, height)
 	# 计算MCU的行列数
@@ -96,29 +101,15 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 
 
 def test():
-	q_table = np.ones(64, dtype = np.uint8).reshape(8, 8)
-	# test_hex = 'fe8d7e1a7c00b1f08f87f4cf0d6950de49a6e9ad78d6df6e9daeae337d7f77a8cfbe6645dc05cde4c22508ab1c4238d46d415f23ffc161ffe0a59f02bf663fd907c73e18f827f147c3fe2ff8f7f16daffe19f82d7c1c1fc45a6f87b4c17b0e9df13bc4d75e23b30ba0c573a36832df785f458f4cd5af75eb7f1bebba36a10e95268de1ff156a5a17'
-	test_hex = ''
+	my_pic = io_jpg.JPG('/tmp/43.jpg')
+	my_pic.read_data()
+	(test_hex, width, height, dqt) = my_pic.get_data()
 
-	with open('/tmp/2.bin', 'rb') as f:
-		test_hex = f.read().encode('hex')
+	decoded_jpg = jpeg_decode(test_hex, dqt[0], width, height)
 
-	# 替换
-	# test_hex = test_hex.replace('ff00', 'ff')
-	decoded_jpg = jpeg_decode(test_hex, q_table, 128, 148)
-	exit(0)
-
-	print "original:"
-	print decoded_jpg
-	# 编码
-	encoded = jpeg_encode(decoded_jpg)
-	print  '#' * 10 + "\nencoded:"
-	print encoded
-	exit(0)
-	# 解码
-	decoded = jpeg_decode(encoded, 8, 9)
-	print '#' * 10 + "\ndecoded:"
-	print decoded
+	print decoded_jpg.shape
+	my_pic2 = io_bmp.BMP('/tmp/43.bmp', decoded_jpg)
+	my_pic2.write_bmp()
 
 
 if __name__ == "__main__":
