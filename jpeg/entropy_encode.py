@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-14 15:19:32 >
+# Time-stamp: < entropy_encode.py 2016-05-14 15:44:28 >
 """
 熵编码
 """
@@ -448,36 +448,29 @@ def get_entropy_encode(input_list):
 def get_encoded_to_hex(input_list):
 	output_bin = ''
 	buffer = ''
-	# all_len = 0
 	# 逐位拼接
 	for i in input_list:
 		# 直流(00)、EOB(0/0)、或者ZRL(F/0)
 		if len(i) == 1:
 			buffer += i[0]
-			# all_len += len(i[0])
 		# 普通码字长度为2个元素
 		else:
 			buffer += (i[0] + i[1])
-			# all_len += (len(i[0]) + len(i[1]))
 		# 字节的倍数可以暂时转换一下成为hex
-		# if (len(buffer) % 8) == 0:
-		# 	this_hex = (hex(int('0b' + buffer, 2)))[2:]
-		# 	# print this_hex
-		# 	this_round = (this_hex[:-1] if this_hex[-1] == 'L' else this_hex)
-		# 	# print this_round
-		# 	output_bin += this_round
-		# 	buffer = ''
+		if (len(buffer) % 8) == 0:
+			# 注意保留前导的0，使用0b1作为前导再去掉
+			this_hex = (hex(int('0b1' + buffer, 2)))[3:]
+			output_bin += (this_hex[:-1] if this_hex[-1] == 'L' else this_hex)
+			buffer = ''
 
-	# print all_len
 	# 剩余位的处理方法
 	l = len(buffer)
 	if (l % 8) != 0:
 		buffer += ('1' * (8 - (l % 8)))
-	# 再转一个hex
-	if len(buffer) != 0:
-		this_hex = (hex(int('0b' + buffer, 2)))[2:]
-	# print this_hex
-	output_bin += (this_hex[:-1] if this_hex[-1] == "L" else this_hex)
+		# 剩余位转hex
+		if len(buffer) != 0:
+			this_hex = (hex(int('0b1' + buffer, 2)))[3:]
+			output_bin += (this_hex[:-1] if this_hex[-1] == "L" else this_hex)
 	# print final_result
 	# print bin(int('1' + final_result, 16))[3:]
 	return output_bin
@@ -747,15 +740,9 @@ def test3():
 	test_hex=''
 	with open('/tmp/2.bin','rb') as f:
 		test_hex=f.read().encode('hex')
-	decoded = get_decoded_from_hex(test_hex, is_debug=True)
-	l = 0
-	for i in decoded:
-		l += len(i[0])
-		if len(i) != 1:
-			l += len(i[1])
-			
-	print len(test_hex) * 4,  l
-
+	decoded = get_decoded_from_hex(test_hex)#, is_debug=True)
+	en = get_encoded_to_hex(decoded)
+	print len(test_hex), len(en) 
 if __name__ == '__main__':
 	# test1()
 	# test2()
