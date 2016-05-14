@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-14 15:44:28 >
+# Time-stamp: < entropy_encode.py 2016-05-14 17:54:19 >
 """
 熵编码
 """
@@ -417,18 +417,28 @@ def get_entropy_encode(input_list):
 	for each_block in input_list:
 		# DC 编码
 		dc_bit = each_block[0][0]
-		dc_amp = each_block[0][1]
-		# 查DC表
-		(dc_bit, dc_amp) = (huffman_DC_luminance_table_forward[dc_bit], calc_amplitude(dc_amp, dc_bit, "DC"))
-		insert_item = (dc_bit, dc_amp)
+		if len(each_block[0]) != 1:
+			dc_amp = each_block[0][1]
+			# 查DC表
+			(dc_bit, dc_amp) = (huffman_DC_luminance_table_forward[dc_bit], calc_amplitude(dc_amp, dc_bit, "DC"))
+			insert_item = (dc_bit, dc_amp)
+		else:
+			dc_bit = huffman_DC_luminance_table_forward[dc_bit]
+			insert_item = (dc_bit, )
 		output_list.append(insert_item)
 		
 		# AC 编码
 		for ac_item in each_block[1:]:
-			# EOB编码
-			if ac_item[0] == 0 and ac_item[1] == 0:
-				EOB = ("1010",)
-				output_list.append(EOB)
+			if len(ac_item) == 2:
+				# RLZ编码
+				if ac_item[0] == 15 and ac_item[1] == 0:
+					insert_item = ('11111111001', )
+					output_list.append(insert_item)
+				# EOB编码
+				elif ac_item[0] == 0 and ac_item[1] == 0:
+					insert_item = ("1010",)
+					output_list.append(insert_item)
+			# 普通的AC系数编码
 			else:
 				ac_zero_counter = ac_item[0]
 				ac_bit = ac_item[1]
@@ -498,13 +508,24 @@ def get_entropy_decode(input_list):
 
 		# 如果tuple元素只有一个'1010'，即EOB
 		if len(i) == 1:
-			EOB = (0, 0)
-			each_block.append(EOB)
-			is_found_EOB = True
-			continue
+			if i[0] == '1010':
+				EOB = (0, 0)
+				each_block.append(EOB)
+				is_found_EOB = True
+				continue
+			elif i[0] == '11111111001':
+				RLZ = (15, 0)
+				each_block.append(RLZ)
+				continue
+			elif not is_coded_DC and i[0] == '00':
+				# DC解码
+				insert_item = (0, )
+				each_block.append(insert_item)
+				is_coded_DC = True
+				continue
 
 		if not is_coded_DC:
-			# DC编码
+			# DC解码
 			dc_bit = i[0]
 			dc_amp = i[1]
 			# DC位长
@@ -515,6 +536,7 @@ def get_entropy_decode(input_list):
 			is_coded_DC = True
 			continue
 
+
 		# AC解码
 		# 查表看到对应的十进制数
 		coefficient = i[0]
@@ -522,6 +544,9 @@ def get_entropy_decode(input_list):
 		# 由(跨越/位长)得出查表位置=跨越*10+位长
 		ac_zero_counter = ac_zero_counter_and_bit / 10
 		ac_bit = ac_zero_counter_and_bit % 10
+		# 跨越像素
+		counter_less_than_64 += ac_zero_counter
+
 		# 计算幅值
 		ac_amp = i[1]
 		ac_amp = calc_amplitude(ac_amp, ac_bit, mode = AC_MODE, direction = False)
@@ -691,9 +716,12 @@ def test2():
 	# 测试对十六进制的读写，囊括所有的转码
 	# test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
 	# 包含两个block的数据
-	test_hex = "FE8D7E1A7C00B1F08F87F4CF0D6950DE49A6E9AD78D6DF6E9DAEAE337D7F77A8CFBE6645DC05CDE4C22508AB1C4238D46D415F23FF00C161FF00E0A59F02BF663FD907C73E18F827F147C3FE2FF8F7F16DAFFE19F82D7C1C1FC45A6F87B4C17B0E9DF13BC4D75E23B30BA0C573A36832DF785F458F4CD5AF75EB7F1BEBBA36A10E95268DE1FF00156A5A17"
+	# test_hex = "FE8D7E1A7C00B1F08F87F4CF0D6950DE49A6E9AD78D6DF6E9DAEAE337D7F77A8CFBE6645DC05CDE4C22508AB1C4238D46D415F23FF00C161FF00E0A59F02BF663FD907C73E18F827F147C3FE2FF8F7F16DAFFE19F82D7C1C1FC45A6F87B4C17B0E9DF13BC4D75E23B30BA0C573A36832DF785F458F4CD5AF75EB7F1BEBBA36A10E95268DE1FF00156A5A17"
 	# 把0xff00替换为ff
-	test_hex = test_hex.replace("FF00", "FF")
+	# test_hex = test_hex.replace("FF00", "FF")
+	test_hex=''
+	with open('/tmp/2.bin','rb') as f:
+		test_hex=f.read().encode('hex')
 
 	print "-" * 10
 	print "original:"
@@ -722,28 +750,9 @@ def test2():
 	final = get_encoded_to_hex(encoded_hex)
 	print final
 
-	print len(test_hex), len(final)
+	print "len of original:", len(test_hex), "\nlen of final:", len(final)
 
-def test3():
-	# 测试dc 00 的bug
-	# test_hex_old = '01111111111110010001010'
-	# test_hex = test_hex_old[:]
-	# if len(test_hex_old) % 8 != 0:
-	# 	test_hex += '1' * (8 - (len(test_hex) % 8 ))
-		
-	# output_bin = (hex(int('0b' + test_hex, 2)))[2:]
-	# test_hex = (output_bin[:-1] if output_bin[-1] == "L" else output_bin)
-	# print test_hex_old
-	# print get_decoded_from_hex(test_hex, is_debug=True)
 
-	# exit(0)
-	test_hex=''
-	with open('/tmp/2.bin','rb') as f:
-		test_hex=f.read().encode('hex')
-	decoded = get_decoded_from_hex(test_hex)#, is_debug=True)
-	en = get_encoded_to_hex(decoded)
-	print len(test_hex), len(en) 
 if __name__ == '__main__':
 	# test1()
-	# test2()
-	test3()
+	test2()
