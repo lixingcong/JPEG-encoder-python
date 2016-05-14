@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_jpg.py 2016-05-14 21:35:24 >
+# Time-stamp: < io_jpg.py 2016-05-14 22:10:39 >
 """
 JPEG读写二进制实现
 """ 
@@ -42,6 +42,8 @@ class JPG(object):
 		}
 		self.buffer = None
 		self.DQT = {}
+		self.colors = {}
+		self.samplefactors = {'v': None, 'h': None}# v:垂直 h水平
 
 		
 	# ------------------------------
@@ -83,7 +85,7 @@ class JPG(object):
 			print i, "->", self.offset_dict[i]
 
 	def read_APP0(self):
-		# 自定义的图像信息，这里忽略
+		# 自定义的图像信息，这里忽略，但是写入需要这个APP0
 		pass
 
 	def read_DQT(self, f):
@@ -109,9 +111,26 @@ class JPG(object):
 			self.DQT[id] = zig_zag_scan.restore_matrix_from_1x64(this_dqt_list)
 		# print self.DQT
 		
-	def read_SOF0(self):
-		pass
-
+	def read_SOF0(self, f):
+		print "reading SOF0"
+		f.seek(self.offset_dict['SOF0'] + 2)
+		# length = struct.unpack('H', f.read(2))
+		# 跳过自读取length和精度
+		f.seek(3, 1)
+		self.height = struct.unpack('>H', f.read(2))
+		self.width = struct.unpack('>H', f.read(2))
+		colors = ord(f.read(1))
+		for color in xrange(colors):
+			id = ord(f.read(1))
+			# 采样系数，不太懂，灰度图还有采样系数？
+			sp = ord(f.read(1))
+			v = sp & 0x0f		# 垂直
+			h = sp >> 4			# 水平
+			dqt_id = ord(f.read(1)) # 量化表id
+			self.colors[id] = [v, h, dqt_id]
+		# print self.colors
+		# print self.width, self.height
+			
 	def read_DHT(self):
 		pass
 
@@ -125,6 +144,7 @@ class JPG(object):
 		with open(self.filelocation, 'rb') as f:
 			self.read_offset(f)
 			self.read_DQT(f)
+			self.read_SOF0(f)
 			
 		pass
 
