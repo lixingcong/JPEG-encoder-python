@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_jpg.py 2016-05-14 21:03:38 >
+# Time-stamp: < io_jpg.py 2016-05-14 21:35:24 >
 """
 JPEG读写二进制实现
 """ 
 
 import numpy as np
 import struct
+import zig_zag_scan
 
 # JPEG固定文件头数据
 # HEADER_MARKER = {}
@@ -40,6 +41,7 @@ class JPG(object):
 			'EOC': None
 		}
 		self.buffer = None
+		self.DQT = {}
 
 		
 	# ------------------------------
@@ -81,11 +83,32 @@ class JPG(object):
 			print i, "->", self.offset_dict[i]
 
 	def read_APP0(self):
+		# 自定义的图像信息，这里忽略
 		pass
 
-	def read_DQT(self):
-		pass
-
+	def read_DQT(self, f):
+		print 'reading DQT'
+		for offset in self.offset_dict['DQT']:
+			f.seek(offset + 2)
+			buffer = f.read(2)
+			length = struct.unpack('>H', buffer)[0]
+			buffer = ord(f.read(1))
+			# 高四位精度，低四位id
+			precision = 0 if (buffer >> 4) == 1 else 1
+			precision + 1
+			id = (buffer & 0x03)
+			length -= 3
+			this_dqt_list = []
+			for i in xrange(0, length, precision):
+				buffer = f.read(precision)
+				if precision == 1:#8bit精度
+					this_dqt_list.append(ord(buffer))
+				else: #十六位精度，这个没有实现
+					pass
+			# 利用z-z顺序转成矩阵
+			self.DQT[id] = zig_zag_scan.restore_matrix_from_1x64(this_dqt_list)
+		# print self.DQT
+		
 	def read_SOF0(self):
 		pass
 
@@ -101,6 +124,7 @@ class JPG(object):
 	def read_data(self):
 		with open(self.filelocation, 'rb') as f:
 			self.read_offset(f)
+			self.read_DQT(f)
 			
 		pass
 
