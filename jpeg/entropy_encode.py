@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-13 22:00:00 >
+# Time-stamp: < entropy_encode.py 2016-05-14 15:19:32 >
 """
 熵编码
 """
@@ -160,7 +160,6 @@ huffman_AC_luminance_table_forward = (
 	"1111111111110010",
 	"1111111111110011",
 	"1111111111110100",
-	"11111111001",
 	"1111111111110101",
 	"1111111111110110",
 	"1111111111110111",
@@ -170,7 +169,9 @@ huffman_AC_luminance_table_forward = (
 	"1111111111111011",
 	"1111111111111100",
 	"1111111111111101",
-	"1111111111111110"
+	"1111111111111110",
+	# 特殊位置，ZRL，对应'F/0'
+	"11111111001"
 )
 
 huffman_AC_luminance_table_backward = {
@@ -325,17 +326,18 @@ huffman_AC_luminance_table_backward = {
 	"1111111111110010" : 148,
 	"1111111111110011" : 149,
 	"1111111111110100" : 150,
-	"11111111001" : 151,
-	"1111111111110101" : 152,
-	"1111111111110110" : 153,
-	"1111111111110111" : 154,
-	"1111111111111000" : 155,
-	"1111111111111001" : 156,
-	"1111111111111010" : 157,
-	"1111111111111011" : 158,
-	"1111111111111100" : 159,
-	"1111111111111101" : 160,
-	"1111111111111110" : 161
+	# ZRL (F/0) 注意另外编码为161
+	"11111111001" : 161,
+	"1111111111110101" : 151,
+	"1111111111110110" : 152,
+	"1111111111110111" : 153,
+	"1111111111111000" : 154,
+	"1111111111111001" : 155,
+	"1111111111111010" : 156,
+	"1111111111111011" : 157,
+	"1111111111111100" : 158,
+	"1111111111111101" : 159,
+	"1111111111111110" : 160
 }
 huffman_DC_luminance_table_forward = (
 	"00",
@@ -344,7 +346,7 @@ huffman_DC_luminance_table_forward = (
 	"100",
 	"101",
 	"110",
-	"1100",
+	"1110",
 	"11110",
 	"111110",
 	"1111110",
@@ -359,7 +361,7 @@ huffman_DC_luminance_table_backward = {
 	"100":3,
 	"101":4,
 	"110":5,
-	"1100":6,
+	"1110":6,
 	"11110":7,
 	"111110":8,
 	"1111110":9,
@@ -446,29 +448,39 @@ def get_entropy_encode(input_list):
 def get_encoded_to_hex(input_list):
 	output_bin = ''
 	buffer = ''
+	# all_len = 0
 	# 逐位拼接
 	for i in input_list:
-		# EOB写入
+		# 直流(00)、EOB(0/0)、或者ZRL(F/0)
 		if len(i) == 1:
-			buffer += '1010'
-		# 普通码字
+			buffer += i[0]
+			# all_len += len(i[0])
+		# 普通码字长度为2个元素
 		else:
 			buffer += (i[0] + i[1])
-		# 四个字节的倍数可以暂时转换一下成为hex
-		if (len(buffer) % 32) == 0:
-			this_hex = (hex(int('0b' + buffer, 2)))[2:]
-			output_bin += (this_hex[:-1] if this_hex[-1] == 'L' else this_hex)
-			buffer = ''
+			# all_len += (len(i[0]) + len(i[1]))
+		# 字节的倍数可以暂时转换一下成为hex
+		# if (len(buffer) % 8) == 0:
+		# 	this_hex = (hex(int('0b' + buffer, 2)))[2:]
+		# 	# print this_hex
+		# 	this_round = (this_hex[:-1] if this_hex[-1] == 'L' else this_hex)
+		# 	# print this_round
+		# 	output_bin += this_round
+		# 	buffer = ''
+
+	# print all_len
 	# 剩余位的处理方法
 	l = len(buffer)
 	if (l % 8) != 0:
-		buffer += '1' * (8 - l % 8)
+		buffer += ('1' * (8 - (l % 8)))
 	# 再转一个hex
-	output_bin += (hex(int('0b' + buffer, 2)))[2:]
-	final_result = (output_bin[:-1] if output_bin[-1] == "L" else output_bin)
+	if len(buffer) != 0:
+		this_hex = (hex(int('0b' + buffer, 2)))[2:]
+	# print this_hex
+	output_bin += (this_hex[:-1] if this_hex[-1] == "L" else this_hex)
 	# print final_result
 	# print bin(int('1' + final_result, 16))[3:]
-	return final_result
+	return output_bin
 
 # 熵解码
 # 输入一个[('100','00')...]，输出RLE例如[(2,3),(3,4)...]
@@ -538,20 +550,25 @@ def get_decoded_from_hex(input_string, is_debug=False):
 	len_buffer = len(buffer)
 	current_pos = 0
 	block_num = 1
+
 	# 遍历所有位
 	while(current_pos < len_buffer):
-		if is_debug:print "-----------\nNow i am in block #%d" % block_num
+		print "-----------\nNow i am in block #%d" % block_num
 		block_num += 1
 		# DC
 		bit_index = 1
-		dc_bit, dc_amp = 0, 0
+		dc_bit, dc_amp = '', 0
 		bits_to_read = 0
 		# 读取位长，最大扫描16位
+		if is_debug:
+			print "DC blocks to find:", 
+			print "\n " + buffer[:32]
 		while bit_index < 16:
 			these_bits_value = buffer[:bit_index]
-			if these_bits_value in huffman_DC_luminance_table_forward:
+			# 使用forward表查
+			if these_bits_value in huffman_DC_luminance_table_backward:
 				dc_bit = these_bits_value
-				# 查表得到位长
+				# 查backward表得到位长
 				bits_to_read = huffman_DC_luminance_table_backward[dc_bit]
 				# 截断
 				buffer = buffer[bit_index:]
@@ -559,17 +576,29 @@ def get_decoded_from_hex(input_string, is_debug=False):
 				current_pos += bit_index
 				break
 			bit_index += 1
-			
-		# DC解码 读取振幅，向前读取位长
-		dc_amp = buffer[:bits_to_read]
-		buffer = buffer[bits_to_read:]
-		# 更新current指针
-		current_pos += bits_to_read
 
+		if dc_bit == '':
+			print "DC not found!!!!"
+			exit(1)
+
+		# 直流分量位长为非0才进行读取
+		if bits_to_read != 0:
+			# DC解码 读取振幅，向前读取位长
+			dc_amp = buffer[:bits_to_read]
+			buffer = buffer[bits_to_read:]
+			insert_item = (dc_bit, dc_amp)
+			# 更新current指针
+			current_pos += bits_to_read
+		else:
+			insert_item = (dc_bit, )
+			
 		# 直流写入到output
-		insert_item = (dc_bit, dc_amp)
 		output_list.append(insert_item)
-		if is_debug:print "DC:", insert_item
+		if is_debug:
+			if bits_to_read != 0:
+				print dc_bit, dc_amp
+			else:
+				print dc_bit
 
 		# AC
 		# 读取（跨越、位长、幅值）
@@ -585,27 +614,40 @@ def get_decoded_from_hex(input_string, is_debug=False):
 			# 复位bit指针
 			bit_index = 1
 			bits_to_read = 0
+			if is_debug:
+				print "AC blocks to find: (32b))", 
+				print "\n " + buffer[:32]
 			# 逐位读取，最大读取16bit
 			while bit_index <= 16:
 				these_bits_value = buffer[:bit_index]
 				if these_bits_value in huffman_AC_luminance_table_backward:
-					# 如果是EOB
+					# 如果是EOB或者ZRL（F/0）即16个零
 					if these_bits_value == '1010':
-						# 更新中止标识
-						is_found_EOB = True
 						is_this_block_ended = True
 						# 截断buffer
 						buffer = buffer[bit_index:]
 						# 插入EOB进结果
-						insert_item = ('1010', )
-						if is_debug:print insert_item
-						output_list.append(insert_item)
+						ac_bit = these_bits_value
+						# 结束本次16位搜寻之旅
+						break
+					elif these_bits_value == '11111111001':
+						# 截断buffer
+						buffer = buffer[bit_index:]
+						ac_bit = these_bits_value
+						# 结束本次16位搜寻之旅
 						break
 					# 如果是其它跨越/位长
 					ac_bit = these_bits_value
 					# 截断
 					buffer = buffer[bit_index:]
 					bits_to_read = huffman_AC_luminance_table_backward[ac_bit] % 10
+					
+					# 余数0即为10对应A
+					if bits_to_read == 0:
+						bits_to_read = 10
+
+					# 跨越了多少个像素
+					zig_zag_counter += (huffman_AC_luminance_table_backward[ac_bit] / 10)
 					# 读取幅值
 					ac_amp = buffer[:bits_to_read]
 					# 截断
@@ -617,11 +659,19 @@ def get_decoded_from_hex(input_string, is_debug=False):
 			zig_zag_counter += 1
 			# 更新current指针
 			current_pos += (bit_index + bits_to_read)
-			# 插入除了EOB的码字
-			if not is_found_EOB:
+			# 插入除了长度为1的码字
+			if bits_to_read != 0:
 				insert_item = (ac_bit, ac_amp)
-				if is_debug:print insert_item
-				output_list.append(insert_item)
+			else:
+				insert_item = (ac_bit, )
+			# 输出调试结果
+			if is_debug:
+				if bits_to_read != 0:
+					print ac_bit, ac_amp
+				else:
+					print ac_bit
+			output_list.append(insert_item)
+				
 		
 		# 遍历完所有MCU停止的条件之一是padding位不超过8
 		if len_buffer - current_pos < 8:
@@ -676,8 +726,37 @@ def test2():
 	
 	print "-" * 10
 	print "encode to hex stream:"
-	print get_encoded_to_hex(encoded_hex)
+	final = get_encoded_to_hex(encoded_hex)
+	print final
+
+	print len(test_hex), len(final)
+
+def test3():
+	# 测试dc 00 的bug
+	# test_hex_old = '01111111111110010001010'
+	# test_hex = test_hex_old[:]
+	# if len(test_hex_old) % 8 != 0:
+	# 	test_hex += '1' * (8 - (len(test_hex) % 8 ))
+		
+	# output_bin = (hex(int('0b' + test_hex, 2)))[2:]
+	# test_hex = (output_bin[:-1] if output_bin[-1] == "L" else output_bin)
+	# print test_hex_old
+	# print get_decoded_from_hex(test_hex, is_debug=True)
+
+	# exit(0)
+	test_hex=''
+	with open('/tmp/2.bin','rb') as f:
+		test_hex=f.read().encode('hex')
+	decoded = get_decoded_from_hex(test_hex, is_debug=True)
+	l = 0
+	for i in decoded:
+		l += len(i[0])
+		if len(i) != 1:
+			l += len(i[1])
+			
+	print len(test_hex) * 4,  l
 
 if __name__ == '__main__':
 	# test1()
-	test2()
+	# test2()
+	test3()
