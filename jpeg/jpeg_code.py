@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < jpeg_code.py 2016-05-12 13:33:00 >
+# Time-stamp: < jpeg_code.py 2016-05-14 10:23:08 >
 """
 JPEG编码
 """
@@ -58,7 +58,7 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 	decoded_blocks = []
 	previous_DC_value = 0
 	# 熵解码
-	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex, is_debug = False)
+	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex, is_debug = True)
 	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin)
 	# 对每一个MCU块进行解码
 	for block in entropy_decoded_blocks:
@@ -97,26 +97,20 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 
 def test():
 	q_table = np.ones(64, dtype = np.uint8).reshape(8, 8)
-	test_hex = 'fe8d7e1a7c00b1f08f87f4cf0d6950de49a6e9ad78d6df6e9daeae337d7f77a8cfbe6645dc05cde4c22508ab1c4238d46d415f23ffc161ffe0a59f02bf663fd907c73e18f827f147c3fe2ff8f7f16daffe19f82d7c1c1fc45a6f87b4c17b0e9df13bc4d75e23b30ba0c573a36832df785f458f4cd5af75eb7f1bebba36a10e95268de1ff156a5a17'
-	decoded_jpg= jpeg_decode(test_hex, q_table, 8, 16)
-	
-	# 测试矩阵，在课本P129
-# 	test_table = np.array([
-# 		[139, 144, 149, 153, 155, 155, 155, 155],
-# 		[144, 151, 153, 156, 159, 156, 156, 156],
-# 		[150, 155, 160, 163, 158, 156, 156, 156],
-# 		[159, 161, 162, 160, 160, 159, 159, 159],
-# 		[159, 160, 161, 162, 162, 155, 155, 155],
-# 		[161, 161, 161, 161, 160, 157, 157, 157],
-# 		[162, 162, 161, 163, 162, 157, 157, 157],
-# 		[162, 162, 161, 163, 162, 157, 157, 157],
-# 		[162, 162, 161, 161, 163, 158, 158, 158]
-# 	])
+	# test_hex = 'fe8d7e1a7c00b1f08f87f4cf0d6950de49a6e9ad78d6df6e9daeae337d7f77a8cfbe6645dc05cde4c22508ab1c4238d46d415f23ffc161ffe0a59f02bf663fd907c73e18f827f147c3fe2ff8f7f16daffe19f82d7c1c1fc45a6f87b4c17b0e9df13bc4d75e23b30ba0c573a36832df785f458f4cd5af75eb7f1bebba36a10e95268de1ff156a5a17'
+	test_hex=''
+	with open('/tmp/2.bin','rb') as f:
+		test_hex=f.read().encode('hex')
+
+	#替换
+	test_hex = test_hex.replace('ff00', 'ff')
+	decoded_jpg= jpeg_decode(test_hex, q_table, 0, 0)
+	exit(0)
+
 	print "original:"
-# 	print test_table
 	print decoded_jpg
 	# 编码
-	encoded = jpeg_encode(decoded_jpg
+	encoded = jpeg_encode(decoded_jpg)
 	print  '#' * 10 + "\nencoded:"
 	print encoded
 	exit(0)
