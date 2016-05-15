@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-15 19:20:32 >
+# Time-stamp: < entropy_encode.py 2016-05-15 19:44:35 >
 """
 熵编码
 """
@@ -495,7 +495,7 @@ def get_entropy_decode(input_list, is_debug=False):
 	is_coded_DC = False
 	block_num = 2
 	for i in input_list:
-		if counter_less_than_64 >= 64 or is_found_EOB:
+		if counter_less_than_64 == 64 or is_found_EOB:
 			# 将当前block加入到列表中
 			output_list.append(each_block)
 			each_block = []
@@ -503,14 +503,18 @@ def get_entropy_decode(input_list, is_debug=False):
 			counter_less_than_64 = 0
 			is_found_EOB = False
 			is_coded_DC = False
-			print  "End of block #%d" % block_num
+			print  "[NUM] End of block #%d" % block_num
 			block_num += 1
+		elif counter_less_than_64 > 64:
+			print "MCU elements out of range 64!"
+			exit(1)
 
 		counter_less_than_64 += 1
 
 		# 如果tuple元素只有一个'1010'，即EOB
 		if len(i) == 1:
 			if is_debug:print i
+			
 			if i[0] == '1010':
 				if is_debug:print "EOB"
 				EOB = (0, 0)
@@ -518,9 +522,11 @@ def get_entropy_decode(input_list, is_debug=False):
 				is_found_EOB = True
 				continue
 			elif i[0] == '11111111001':
-				if is_debug:print "RLZ"
+				if is_debug:print "    RLZ"
 				RLZ = (15, 0)
 				each_block.append(RLZ)
+				# 跨越
+				counter_less_than_64 += 15
 				continue
 			elif not is_coded_DC and i[0] == '00':
 				if is_debug:print "---\nDC00"
@@ -566,7 +572,7 @@ def get_entropy_decode(input_list, is_debug=False):
 
 		# 计算幅值
 		ac_amp = i[1]
-		if is_debug:print " ac_amp,ac_bit:", ac_amp, ac_bit
+
 		ac_amp = calc_amplitude(ac_amp, ac_bit, mode = AC_MODE, direction = False)
 
 		insert_item = (ac_zero_counter, ac_bit, ac_amp)
@@ -592,7 +598,7 @@ def get_decoded_from_hex(input_string, is_debug = False):
 	lastlast_block_pos = 0
 	# 遍历所有位
 	while(current_pos < len_buffer):
-		print "-----------\nNow i am in block #%d" % block_num
+		print "-----------\n[HEX] decode block #%d" % block_num
 		block_num += 1
 		# DC
 		bit_index = 1
