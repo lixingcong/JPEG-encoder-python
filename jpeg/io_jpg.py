@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_jpg.py 2016-05-14 23:24:44 >
+# Time-stamp: < io_jpg.py 2016-05-15 16:27:13 >
 """
 JPEG读写二进制实现
 """
@@ -162,6 +162,8 @@ class JPG(object):
 					break
 			self.hex += buffer.encode('hex')
 		print "  0xff00 meets %d times" % ff_counter
+		with open('/tmp/jpg_bin.bin','w') as ee:
+			ee.write((self.hex).decode('hex'))
 		# print self.hex
 
 	def read_data(self):

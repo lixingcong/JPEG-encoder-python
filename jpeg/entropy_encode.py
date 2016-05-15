@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-15 15:33:51 >
+# Time-stamp: < entropy_encode.py 2016-05-15 19:20:32 >
 """
 熵编码
 """
@@ -160,6 +160,8 @@ huffman_AC_luminance_table_forward = (
 	"1111111111110010",
 	"1111111111110011",
 	"1111111111110100",
+	# 特殊位置，ZRL，对应'F/0'
+	"11111111001",
 	"1111111111110101",
 	"1111111111110110",
 	"1111111111110111",
@@ -169,9 +171,7 @@ huffman_AC_luminance_table_forward = (
 	"1111111111111011",
 	"1111111111111100",
 	"1111111111111101",
-	"1111111111111110",
-	# 特殊位置，ZRL，对应'F/0'
-	"11111111001"
+	"1111111111111110"
 )
 
 huffman_AC_luminance_table_backward = {
@@ -326,18 +326,18 @@ huffman_AC_luminance_table_backward = {
 	"1111111111110010" : 148,
 	"1111111111110011" : 149,
 	"1111111111110100" : 150,
-	# ZRL (F/0) 注意另外编码为161
-	"11111111001" : 161,
-	"1111111111110101" : 151,
-	"1111111111110110" : 152,
-	"1111111111110111" : 153,
-	"1111111111111000" : 154,
-	"1111111111111001" : 155,
-	"1111111111111010" : 156,
-	"1111111111111011" : 157,
-	"1111111111111100" : 158,
-	"1111111111111101" : 159,
-	"1111111111111110" : 160
+	# ZRL (F/0) 注意另外编码规则与上面不一致
+	"11111111001" : 151,
+	"1111111111110101" : 152,
+	"1111111111110110" : 153,
+	"1111111111110111" : 154,
+	"1111111111111000" : 155,
+	"1111111111111001" : 156,
+	"1111111111111010" : 157,
+	"1111111111111011" : 158,
+	"1111111111111100" : 159,
+	"1111111111111101" : 160,
+	"1111111111111110" : 161
 }
 huffman_DC_luminance_table_forward = (
 	"00",
@@ -493,7 +493,7 @@ def get_entropy_decode(input_list, is_debug=False):
 	counter_less_than_64 = 0
 	is_found_EOB = False
 	is_coded_DC = False
-	block_num = 1
+	block_num = 2
 	for i in input_list:
 		if counter_less_than_64 >= 64 or is_found_EOB:
 			# 将当前block加入到列表中
@@ -503,6 +503,8 @@ def get_entropy_decode(input_list, is_debug=False):
 			counter_less_than_64 = 0
 			is_found_EOB = False
 			is_coded_DC = False
+			print  "End of block #%d" % block_num
+			block_num += 1
 
 		counter_less_than_64 += 1
 
@@ -547,8 +549,13 @@ def get_entropy_decode(input_list, is_debug=False):
 		if is_debug:print "AC:", i
 		coefficient = i[0]
 		ac_zero_counter_and_bit = huffman_AC_luminance_table_backward[coefficient]
+
+		# RLZ 后面的，减去RLZ一个
+		if ac_zero_counter_and_bit > 150:
+			ac_zero_counter_and_bit -= 1
+			
 		# 由(跨越/位长)得出查表位置=跨越*10+位长
-		ac_zero_counter = ac_zero_counter_and_bit / 10
+		ac_zero_counter = (ac_zero_counter_and_bit - 1) / 10
 		ac_bit = ac_zero_counter_and_bit % 10
 		
 		# 余数0表示位长A
@@ -580,6 +587,9 @@ def get_decoded_from_hex(input_string, is_debug = False):
 	current_pos = 0
 	block_num = 1
 
+	# 调试用的
+	last_block_pos = 0
+	lastlast_block_pos = 0
 	# 遍历所有位
 	while(current_pos < len_buffer):
 		print "-----------\nNow i am in block #%d" % block_num
@@ -590,8 +600,9 @@ def get_decoded_from_hex(input_string, is_debug = False):
 		bits_to_read = 0
 		# 读取位长，最大扫描16位
 		if is_debug:
-			print "DC blocks to find:",
-			print "\n " + buffer[:32]
+			# print "DC blocks to find:",
+			# print "\n " + buffer[:32]
+			pass
 		while bit_index < 16:
 			these_bits_value = buffer[:bit_index]
 			# 使用forward表查
@@ -638,14 +649,17 @@ def get_decoded_from_hex(input_string, is_debug = False):
 		zig_zag_counter = 1
 		is_found_EOB = False
 		is_this_block_ended = False
-		while zig_zag_counter < 64 and not is_this_block_ended:
-			if is_debug:print "pixel #" + str(zig_zag_counter),
+		while True:
+			
 			# 复位bit指针
 			bit_index = 1
 			bits_to_read = 0
+			# 临时调试用，
+			temp = 0
 			if is_debug:
-				print "AC blocks to find: (32b))",
-				print "\n " + buffer[:32]
+				# print "AC blocks to find: (32b))",
+				# print "\n " + buffer[:32]
+				pass
 			# 逐位读取，最大读取16bit
 			while bit_index <= 16:
 				these_bits_value = buffer[:bit_index]
@@ -663,20 +677,31 @@ def get_decoded_from_hex(input_string, is_debug = False):
 						# 截断buffer
 						buffer = buffer[bit_index:]
 						ac_bit = these_bits_value
+						# 跨越15个零，zig+=15
+						zig_zag_counter += 15
 						# 结束本次16位搜寻之旅
 						break
 					# 如果是其它跨越/位长
 					ac_bit = these_bits_value
 					# 截断
 					buffer = buffer[bit_index:]
-					bits_to_read = huffman_AC_luminance_table_backward[ac_bit] % 10
 
-					# 余数0即为10对应A
+					# 求位长和跨越，很多坑，最坑就是RLZ
+					temp = huffman_AC_luminance_table_backward[ac_bit]
+					# 在RLZ前面的数字
+					if temp < 151:
+						pass
+					# 在RLZ后的数字
+					else:
+						temp -= 1
+					# 位长
+					bits_to_read = temp % 10
+					# 位长余数0，即为10对应A
 					if bits_to_read == 0:
 						bits_to_read = 10
-
 					# 跨越了多少个像素
-					zig_zag_counter += (huffman_AC_luminance_table_backward[ac_bit] / 10)
+					zig_zag_counter += (temp - 1) / 10
+					
 					# 读取幅值
 					ac_amp = buffer[:bits_to_read]
 					# 截断
@@ -684,8 +709,8 @@ def get_decoded_from_hex(input_string, is_debug = False):
 					break
 
 				bit_index += 1
-			# 下一个zig
-			zig_zag_counter += 1
+
+			if is_debug:print "pixel #" + str(zig_zag_counter),
 			# 更新current指针
 			current_pos += (bit_index + bits_to_read)
 			# 插入除了长度为1的码字
@@ -700,7 +725,21 @@ def get_decoded_from_hex(input_string, is_debug = False):
 				else:
 					print ac_bit
 			output_list.append(insert_item)
+			# 调试
+			if zig_zag_counter == 63 or is_this_block_ended:
+				break
+			elif zig_zag_counter >= 64:
+				print "ERROR when coding AC"
+				print "last zig-zag counter,this zig-zag:", last_block_pos, zig_zag_counter
+				print "buffer:", buffer[:16]
+				exit(1)
 
+			
+			# bug重现
+			last_block_pos = zig_zag_counter
+
+			# 下一个zig
+			zig_zag_counter += 1
 
 		# 遍历完所有MCU停止的条件之一是padding位不超过8
 		if len_buffer - current_pos < 8:
@@ -727,12 +766,12 @@ def test2():
 	# 测试对十六进制的读写，囊括所有的转码
 	# test_hex = "FD53F885FB4EDDFC28F8A1A47ED7DF1A3F69FF001A4DFB29FC03FD983F67A8BE21785BC617FADF88BC3B67E35B192CBC11F153C0BE30F859ACD9F8987C40F897E32F1AF897C32F7DF173C19E0AF107C43D06F7C69E15BCD47C63A07C33D39E5F15FF00"
 	# 包含两个block的数据
-	# test_hex = "FE8D7E1A7C00B1F08F87F4CF0D6950DE49A6E9AD78D6DF6E9DAEAE337D7F77A8CFBE6645DC05CDE4C22508AB1C4238D46D415F23FF00C161FF00E0A59F02BF663FD907C73E18F827F147C3FE2FF8F7F16DAFFE19F82D7C1C1FC45A6F87B4C17B0E9DF13BC4D75E23B30BA0C573A36832DF785F458F4CD5AF75EB7F1BEBBA36A10E95268DE1FF00156A5A17"
+	test_hex = "FE8D7E1A7C00B1F08F87F4CF0D6950DE49A6E9AD78D6DF6E9DAEAE337D7F77A8CFBE6645DC05CDE4C22508AB1C4238D46D415F23FF00C161FF00E0A59F02BF663FD907C73E18F827F147C3FE2FF8F7F16DAFFE19F82D7C1C1FC45A6F87B4C17B0E9DF13BC4D75E23B30BA0C573A36832DF785F458F4CD5AF75EB7F1BEBBA36A10E95268DE1FF00156A5A17"
 	# 把0xff00替换为ff
-	# test_hex = test_hex.replace("FF00", "FF")
-	test_hex = ''
-	with open('/tmp/2.bin', 'rb') as f:
-		test_hex = f.read().encode('hex')
+	test_hex = test_hex.replace("FF00", "FF")
+	# test_hex = ''
+	# with open('/tmp/2.bin', 'rb') as f:
+		# test_hex = f.read().encode('hex')
 
 	print "-" * 10
 	print "original:"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < jpeg_code.py 2016-05-15 16:15:10 >
+# Time-stamp: < jpeg_code.py 2016-05-15 19:17:38 >
 """
 JPEG编码
 """
@@ -58,10 +58,16 @@ def jpeg_encode(input_matrix):
 
 def jpeg_decode(input_hex, quantize_table, width, height):
 	decoded_blocks = []
-	previous_DC_value = 0
+	previous_DC_value = -128
+	
+	# 合并前计算padded尺寸
+	width_padded, height_padded = block_split.calc_new_size(width, height)
+	# 计算MCU的行列数
+	columns, rows = width_padded / 8, height_padded / 8
+	
 	# 熵解码
-	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex, is_debug = True)
-	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin, is_debug=False)
+	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex)#, is_debug = True)
+	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin, is_debug=True)
 
 	# 对每一个MCU块进行解码
 	for block in entropy_decoded_blocks:
@@ -87,11 +93,8 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 		# 更新DC值
 		previous_DC_value = result_zig_zag[0, 0]
 
-
-	# 合并前计算padded尺寸
-	width_padded, height_padded = block_split.calc_new_size(width, height)
-	# 计算MCU的行列数
-	columns, rows = width_padded / 8, height_padded / 8
+	print len(decoded_blocks)
+		
 	# 合并
 	merged_matrix = block_split.merge_blocks(decoded_blocks, rows, columns)
 	# 移除多余的边缘像素
