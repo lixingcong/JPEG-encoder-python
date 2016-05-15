@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-12 10:37:38 >
+# Time-stamp: < io_bmp.py 2016-05-15 16:05:35 >
 """
 读写bmp文件
 """
@@ -20,11 +20,11 @@ def generate_colorspace(num = 256):
 
 # 蔡丽梅《图像处理》P31例题2.1，计算BMP的真实二进制数据大小
 def calc_real_datasize(width, height, isTrueColor = False):
-	if isTrueColor:
-		w = ((width * 8 + 31) >> 5) << 2
-		return (w * height, w - width)
+	if width % 4 != 0:
+		width_new = width + 4 - (width % 4)
 	else:
-		return (width * height, 0)
+		width_new = width
+	return (width_new * height, width_new - width)
 
 # BMP固定文件头数据
 HEADER_SIGN = 0x4d42   # offset 0
@@ -123,8 +123,8 @@ class BMP(object):
 				for x in xrange(self.width):
 					f.write(chr(self.matrix[y, x]))
 				# padding数据
-				# for i in xrange(self.padding_bytes_each_line):
-					# f.write('\x00')
+				for i in xrange(self.padding_bytes_each_line):
+					f.write('\x00')
 
 
 	def show_bmp(self):
@@ -166,8 +166,21 @@ def test():
 	my_pic4.write_bmp()
 	print "write /tmp/my.bmp ok!"
 
+def test2():
+	my_pic=BMP('/tmp/43_gimp_good.bmp')
+	my_pic.read_bmp()
+	m,height,width=my_pic.get_data()
+	
+	with open('/tmp/from_bmp.txt','w') as f:
+		for y in xrange(height):
+			for x in xrange(width):
+				f.write(str(int(m[y, x])))
+				f.write(' ')
+			f.write('\n')
 if __name__ == '__main__':
-	test()
+	test2()
+	# test()
+
 
 
 

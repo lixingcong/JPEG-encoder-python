@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < jpeg_code.py 2016-05-15 15:23:50 >
+# Time-stamp: < jpeg_code.py 2016-05-15 16:15:10 >
 """
 JPEG编码
 """
@@ -60,8 +60,8 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 	decoded_blocks = []
 	previous_DC_value = 0
 	# 熵解码
-	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex, is_debug = False)
-	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin, is_debug=True)
+	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex, is_debug = True)
+	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin, is_debug=False)
 
 	# 对每一个MCU块进行解码
 	for block in entropy_decoded_blocks:
@@ -107,7 +107,15 @@ def test():
 
 	decoded_jpg = jpeg_decode(test_hex, dqt[0], width, height)
 
-	print decoded_jpg.shape
+	# with open('/tmp/from_jpg_py.txt','w') as f:
+	# 	for y in xrange(height):
+	# 		for x in xrange(width):
+	# 			f.write(hex(int(decoded_jpg[y, x]))[2:])
+	# 			f.write(' ')
+	# 		f.write('\n')
+			
+
+	# exit(0)
 	my_pic2 = io_bmp.BMP('/tmp/43.bmp', decoded_jpg)
 	my_pic2.write_bmp()
 
