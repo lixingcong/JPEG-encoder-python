@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-15 21:13:36 >
+# Time-stamp: < dc_ac_encode.py 2016-05-15 22:27:04 >
 """
 DC AC系数的编码
 """
@@ -79,16 +79,13 @@ def DC_AC_encode(input_list, previous_DC_value):
 	# zig应少于64，算上DC为1
 	zig_zag_counter = 1
 	for ac_value in ac_values:
-		if ac_value[0] == 15 and ac_value[1] == 0:
-			zig_zag_counter += 16
-		else:
-			zig_zag_counter += ac_value[0]
+		zig_zag_counter += (ac_value[0] + 1)
 		output_list.append(ac_value)
-	if zig_zag_counter < 63:
+	if zig_zag_counter < 64:
 		# 无振幅
 		EOC = (0, 0)
 		output_list.append(EOC)
-	elif zig_zag_counter > 63:
+	elif zig_zag_counter > 64:
 		print "DC AC coding ERROR! out of range 64!"
 	return output_list
 
@@ -146,15 +143,34 @@ def test():
 	print res
 	print "len:", len(res)
 
+# 测试带有连续16个零的，还有DC差值0的特殊情况
 def test1():
-	test_list = [0, 0, -2, -1, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+	test_list = [
+		[0, 0, -2, -1, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+		[10, 0, -2, -1, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+		[4, 0, -2, -1, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 88]
+	]
+	l = len(test_list)
 	print "original:"
-	print test_list
-	encoded =  DC_AC_encode(test_list, 0)
+	for i in test_list:
+		print i
+
+	last_dc = 0
+	encoded = []
+	for i in xrange(l):
+		encoded.append(DC_AC_encode(test_list[i], last_dc))
+		last_dc =  test_list[i][0]
 	print "\nencoded:"
-	print encoded
+	for i in encoded:print i
+
+	decoded = []
+	last_dc = 0
 	print '\ndecoded:'
-	print DC_AC_decode(encoded, 0)
+	for i in encoded:
+		j = DC_AC_decode(i, last_dc)
+		decoded.append(j)
+		last_dc = j[0]
+		print j
 if __name__ == '__main__':
 	# test()
 	test1()
