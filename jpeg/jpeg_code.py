@@ -22,7 +22,7 @@ from quantize import LUMINANCE
 
 def jpeg_encode(input_matrix):
 	output_hex = ''
-	each_block_encoded = []
+	dc_ac_encoded = []
 	# 填充block长宽为8的整数
 	temp_matrix = block_split.padding_dummy_edge(input_matrix)
 	# 分割MCU
@@ -41,28 +41,27 @@ def jpeg_encode(input_matrix):
 		# zig-zag顺序读取数据
 		result_zig_zag = zig_zag_scan.get_seq_1x64(table_quantized)
 		# 直流、交流编码
-		encoded_1 = dc_ac_encode.DC_AC_encode(result_zig_zag, last_DC_value)
-		print encoded_1
-		# 熵编码（哈夫曼）
-		encoded_2 = entropy_encode.get_entropy_encode(encoded_1)
-		each_block_encoded.append(encoded_2)
-		# print encoded_2
 
+		encoded_1 = dc_ac_encode.DC_AC_encode(result_zig_zag, last_DC_value)
+
+		dc_ac_encoded.append(encoded_1)
 		# 记下当前块的DC值供下一个编号
 		last_DC_value = table_quantized[0, 0]
 
-
+	# 熵编码（哈夫曼）
+	encoded_2 = entropy_encode.get_entropy_encode(dc_ac_encoded)
 	# 二进制编码
-	output_hex = entropy_encode.get_encoded_to_hex(each_block_encoded)
+	output_hex = entropy_encode.get_encoded_to_hex(encoded_2)
+	print encoded_1, output_hex
 	return output_hex
 
 def jpeg_decode(input_hex, quantize_table, width, height):
 	decoded_blocks = []
 	previous_DC_value = -128
-	
+
 	# 熵解码
-	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex)#, is_debug = True)
-	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin)#, is_debug=True)
+	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex)   # , is_debug = True)
+	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin)   # , is_debug=True)
 
 	# 对每一个MCU块进行解码
 	for block in entropy_decoded_blocks:
@@ -99,26 +98,32 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 	return final_matrix
 
 
-
-def test():
+# 测试读取jpg图片转至bmp
+def test1():
 	my_pic = io_jpg.JPG('/tmp/43.jpg')
 	my_pic.read_data()
 	(test_hex, width, height, dqt) = my_pic.get_data()
 
 	decoded_jpg = jpeg_decode(test_hex, dqt[0], width, height)
 
-	# with open('/tmp/from_jpg_py.txt','w') as f:
-	# 	for y in xrange(height):
-	# 		for x in xrange(width):
-	# 			f.write(hex(int(decoded_jpg[y, x]))[2:])
-	# 			f.write(' ')
-	# 		f.write('\n')
-			
-
-	# exit(0)
 	my_pic2 = io_bmp.BMP('/tmp/43.bmp', decoded_jpg)
 	my_pic2.write_bmp()
 
+# 测试bmp转jpg
+def test2():
+	my_pic = io_bmp.BMP('/tmp/43.bmp')
+	my_pic.read_bmp()
+	matrix, height, width = my_pic.get_data()
+	# 编码
+	hex1 = jpeg_encode(matrix)
+
+
+	# 解码
+	decoded_jpg = jpeg_decode(hex1, True, width, height)
+	print decoded_jpg
+	my_pic2 = io_bmp.BMP('/tmp/44.bmp', decoded_jpg)
+	my_pic2.write_bmp()
 
 if __name__ == "__main__":
-	test()
+# 	test1()
+	test2()

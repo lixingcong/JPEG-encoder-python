@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-11 23:58:14 >
+# Time-stamp: < dc_ac_encode.py 2016-05-15 21:13:36 >
 """
 DC AC系数的编码
 """
@@ -22,48 +22,74 @@ def calc_need_bits(input_num):
 	return returnValue
 
 
-# DC直流分量编码
+# DC直流分量编码，从
 def dc_encode(this_DC_value, previous_DC_value):
 	theta_DC = this_DC_value - previous_DC_value
-	need_bit = calc_need_bits(theta_DC)
-	return (need_bit, theta_DC)
+	if theta_DC != 0:
+		need_bit = calc_need_bits(theta_DC)
+		return (need_bit, theta_DC)
+	else:
+		return (0,)
 
 def ac_encode(input_list):
-	lite_list = input_list[:]
-	output_list = []
-	# 移除末位0
-	while(lite_list[-1] == 0):
-		lite_list.pop()
-	index = 0
-	length = len(lite_list)
-	# 开始进行RLE编码
-	while(index < length):
-		zero_counter = 0
-		# 找出连续0个数,no larger than 15
-		while(lite_list[index] == 0 and zero_counter < 15):
-			zero_counter += 1
+	length = len(input_list)
+	if length == 0:
+		yield (0, 0)
+	else:
+		lite_list = input_list[:]
+		output_list = []
+		# 移除末位0
+
+		while(length > 0 and lite_list[-1] == 0):
+			lite_list.pop()
+			length = len(lite_list)
+		length = len(lite_list)
+
+		index = 0
+		# 开始进行RLE编码
+		while(index < length):
+			zero_counter = 0
+			# 找出连续0个数,no larger than 15
+			while(lite_list[index] == 0 and zero_counter < 15):
+				zero_counter += 1
+				index += 1
+			current_num = lite_list[index]
+			# 本次RLE码字
+			if current_num != 0:
+				this_round = [zero_counter, calc_need_bits(current_num), current_num]
+			else:
+				# RZL
+				this_round = [15, 0]
+			# 生成器yeild
+			yield tuple(this_round)
 			index += 1
-		current_num = lite_list[index]
-		# 本次RLE码字
-		this_round = [zero_counter, calc_need_bits(current_num), current_num]
-		# 生成器yeild
-		yield tuple(this_round)
-		index += 1
 
 
 def DC_AC_encode(input_list, previous_DC_value):
 	output_list = []
 	# 直流编码
-	(dc_bit, dc) = dc_encode(input_list[0], previous_DC_value)
-	dc_value = (dc_bit, dc)
+	dc = dc_encode(input_list[0], previous_DC_value)
+	if len(dc) == 2:
+		dc_value = (dc[0], dc[1])
+	else:
+		dc_value = (dc[0],)
 	output_list.append(dc_value)
 	# 交流编码
 	ac_values = ac_encode(input_list[1:])
+	# zig应少于64，算上DC为1
+	zig_zag_counter = 1
 	for ac_value in ac_values:
+		if ac_value[0] == 15 and ac_value[1] == 0:
+			zig_zag_counter += 16
+		else:
+			zig_zag_counter += ac_value[0]
 		output_list.append(ac_value)
-	# 无振幅
-	EOC = (0, 0)
-	output_list.append(EOC)
+	if zig_zag_counter < 63:
+		# 无振幅
+		EOC = (0, 0)
+		output_list.append(EOC)
+	elif zig_zag_counter > 63:
+		print "DC AC coding ERROR! out of range 64!"
 	return output_list
 
 def DC_AC_decode(input_list, previous_DC_value):
@@ -120,5 +146,15 @@ def test():
 	print res
 	print "len:", len(res)
 
+def test1():
+	test_list = [0, 0, -2, -1, -1, -1, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+	print "original:"
+	print test_list
+	encoded =  DC_AC_encode(test_list, 0)
+	print "\nencoded:"
+	print encoded
+	print '\ndecoded:'
+	print DC_AC_decode(encoded, 0)
 if __name__ == '__main__':
-	test()
+	# test()
+	test1()

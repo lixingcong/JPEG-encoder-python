@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-15 19:44:35 >
+# Time-stamp: < entropy_encode.py 2016-05-15 19:59:56 >
 """
 熵编码
 """
@@ -410,13 +410,14 @@ def calc_amplitude(input_num, need_bit, mode = AC_MODE, direction = FORWARD):
 		return output_string
 
 # 熵编码
-# 输入一个RLE例如[(2,3),(3,4)...]输出[('100','00')...]
+# 输入一组包含多个Block的RLE码流，例如[[(2,3),(3,4)...],[(00,),(2,3)...]]输出[('100','00')...]
 def get_entropy_encode(input_list):
 	output_list = []
 	# 对每个block进行编码
 	for each_block in input_list:
-		# DC 编码
+		# DC 编码，每个block的第一个元素是DC
 		dc_bit = each_block[0][0]
+		# 长度为1，即为dc00
 		if len(each_block[0]) != 1:
 			dc_amp = each_block[0][1]
 			# 查DC表
@@ -442,10 +443,16 @@ def get_entropy_encode(input_list):
 			else:
 				ac_zero_counter = ac_item[0]
 				ac_bit = ac_item[1]
-				# 由(跨越/位长)得出查表位置=跨越*10+位长
+				# 由(跨越/位长)得出查表位置=跨越*10+位长，除了RLZ以后的位置有偏移
+
 				position_in_huffman_table = ac_zero_counter * 10 + ac_bit
 				ac_amp = ac_item[2]
 				ac_amp = calc_amplitude(ac_amp, ac_bit)
+				
+				# RLZ后的有偏移1
+				if ac_zero_counter == 15:
+					position_in_huffman_table += 1
+				
 				# 通过(跨越/位长)来查表
 				coefficient = huffman_AC_luminance_table_forward[position_in_huffman_table]
 				insert_item = (coefficient, ac_amp)
@@ -454,7 +461,7 @@ def get_entropy_encode(input_list):
 	return output_list
 
 # 二进制编码
-# 输入一个列表[('100','00')...]，输出码流类似'ffab3324'，
+# 输入一个列表[('100','00')...],该列表是所有block的组合，不分block，输出码流类似'ffab3324'，
 def get_encoded_to_hex(input_list):
 	output_bin = ''
 	buffer = ''
@@ -493,7 +500,7 @@ def get_entropy_decode(input_list, is_debug=False):
 	counter_less_than_64 = 0
 	is_found_EOB = False
 	is_coded_DC = False
-	block_num = 2
+	block_num = 1
 	for i in input_list:
 		if counter_less_than_64 == 64 or is_found_EOB:
 			# 将当前block加入到列表中
@@ -572,13 +579,13 @@ def get_entropy_decode(input_list, is_debug=False):
 
 		# 计算幅值
 		ac_amp = i[1]
-
 		ac_amp = calc_amplitude(ac_amp, ac_bit, mode = AC_MODE, direction = False)
 
 		insert_item = (ac_zero_counter, ac_bit, ac_amp)
 		each_block.append(insert_item)
 
 	# 最后一个列表要加进去
+	print  "[NUM] End of block #%d" % block_num
 	output_list.append(each_block)
 	return output_list
 
@@ -593,9 +600,6 @@ def get_decoded_from_hex(input_string, is_debug = False):
 	current_pos = 0
 	block_num = 1
 
-	# 调试用的
-	last_block_pos = 0
-	lastlast_block_pos = 0
 	# 遍历所有位
 	while(current_pos < len_buffer):
 		print "-----------\n[HEX] decode block #%d" % block_num
@@ -656,7 +660,6 @@ def get_decoded_from_hex(input_string, is_debug = False):
 		is_found_EOB = False
 		is_this_block_ended = False
 		while True:
-			
 			# 复位bit指针
 			bit_index = 1
 			bits_to_read = 0
@@ -694,11 +697,8 @@ def get_decoded_from_hex(input_string, is_debug = False):
 
 					# 求位长和跨越，很多坑，最坑就是RLZ
 					temp = huffman_AC_luminance_table_backward[ac_bit]
-					# 在RLZ前面的数字
-					if temp < 151:
-						pass
-					# 在RLZ后的数字
-					else:
+					# 排在RLZ后面的数字
+					if temp > 150:
 						temp -= 1
 					# 位长
 					bits_to_read = temp % 10
@@ -731,26 +731,20 @@ def get_decoded_from_hex(input_string, is_debug = False):
 				else:
 					print ac_bit
 			output_list.append(insert_item)
-			# 调试
+			# 异常解码，数组溢出
 			if zig_zag_counter == 63 or is_this_block_ended:
 				break
 			elif zig_zag_counter >= 64:
-				print "ERROR when coding AC"
-				print "last zig-zag counter,this zig-zag:", last_block_pos, zig_zag_counter
+				print "ERROR when coding AC, out of range 64"
 				print "buffer:", buffer[:16]
-				exit(1)
-
-			
-			# bug重现
-			last_block_pos = zig_zag_counter
-
+				exit(1)				
 			# 下一个zig
 			zig_zag_counter += 1
 
 		# 遍历完所有MCU停止的条件之一是padding位不超过8
 		if len_buffer - current_pos < 8:
 			break
-	if is_debug:print "-------\nremain bits:", buffer, '\n-------'
+	if is_debug:print "-------\ndecode from hex finished, remain bits:", buffer, '\n-------'
 	return output_list
 
 def test1():

@@ -167,11 +167,19 @@ def test():
 	print "write /tmp/my.bmp ok!"
 
 def test2():
-	my_pic=BMP('/tmp/43_gimp_good.bmp')
+	my_pic = BMP('/tmp/43.bmp')
 	my_pic.read_bmp()
-	m,height,width=my_pic.get_data()
-	
-	with open('/tmp/from_bmp.txt','w') as f:
+	m, height, width = my_pic.get_data()
+
+	print "q to quit, color query"
+	while True:
+		s = raw_input("w, h:").split()
+		if s[0] == 'q':
+			break
+		print m[int(s[1]), int(s[0])]
+
+
+	with open('/tmp/from_bmp.txt', 'w') as f:
 		for y in xrange(height):
 			for x in xrange(width):
 				f.write(str(int(m[y, x])))
