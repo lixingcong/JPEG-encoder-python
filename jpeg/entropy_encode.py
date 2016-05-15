@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-14 17:54:19 >
+# Time-stamp: < entropy_encode.py 2016-05-15 15:33:51 >
 """
 熵编码
 """
@@ -487,7 +487,7 @@ def get_encoded_to_hex(input_list):
 
 # 熵解码
 # 输入一个[('100','00')...]，输出RLE例如[(2,3),(3,4)...]
-def get_entropy_decode(input_list):
+def get_entropy_decode(input_list, is_debug=False):
 	output_list = []
 	each_block = []
 	counter_less_than_64 = 0
@@ -508,16 +508,20 @@ def get_entropy_decode(input_list):
 
 		# 如果tuple元素只有一个'1010'，即EOB
 		if len(i) == 1:
+			if is_debug:print i
 			if i[0] == '1010':
+				if is_debug:print "EOB"
 				EOB = (0, 0)
 				each_block.append(EOB)
 				is_found_EOB = True
 				continue
 			elif i[0] == '11111111001':
+				if is_debug:print "RLZ"
 				RLZ = (15, 0)
 				each_block.append(RLZ)
 				continue
 			elif not is_coded_DC and i[0] == '00':
+				if is_debug:print "---\nDC00"
 				# DC解码
 				insert_item = (0,)
 				each_block.append(insert_item)
@@ -525,6 +529,7 @@ def get_entropy_decode(input_list):
 				continue
 
 		if not is_coded_DC:
+			if is_debug:print "---\nDC: ", i
 			# DC解码
 			dc_bit = i[0]
 			dc_amp = i[1]
@@ -539,16 +544,22 @@ def get_entropy_decode(input_list):
 
 		# AC解码
 		# 查表看到对应的十进制数
+		if is_debug:print "AC:", i
 		coefficient = i[0]
 		ac_zero_counter_and_bit = huffman_AC_luminance_table_backward[coefficient]
 		# 由(跨越/位长)得出查表位置=跨越*10+位长
 		ac_zero_counter = ac_zero_counter_and_bit / 10
 		ac_bit = ac_zero_counter_and_bit % 10
+		
+		# 余数0表示位长A
+		if ac_bit == 0:
+			ac_bit = 10
 		# 跨越像素
 		counter_less_than_64 += ac_zero_counter
 
 		# 计算幅值
 		ac_amp = i[1]
+		if is_debug:print " ac_amp,ac_bit:", ac_amp, ac_bit
 		ac_amp = calc_amplitude(ac_amp, ac_bit, mode = AC_MODE, direction = False)
 
 		insert_item = (ac_zero_counter, ac_bit, ac_amp)

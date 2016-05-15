@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < jpeg_code.py 2016-05-14 10:23:08 >
+# Time-stamp: < jpeg_code.py 2016-05-15 15:23:50 >
 """
 JPEG编码
 """
@@ -61,7 +61,7 @@ def jpeg_decode(input_hex, quantize_table, width, height):
 	previous_DC_value = 0
 	# 熵解码
 	entropy_decoded_bin = entropy_encode.get_decoded_from_hex(input_hex, is_debug = False)
-	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin)
+	entropy_decoded_blocks = entropy_encode.get_entropy_decode(entropy_decoded_bin, is_debug=True)
 
 	# 对每一个MCU块进行解码
 	for block in entropy_decoded_blocks:
