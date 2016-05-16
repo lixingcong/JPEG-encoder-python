@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_jpg.py 2016-05-16 17:00:41 >
+# Time-stamp: < io_jpg.py 2016-05-16 17:56:40 >
 """
 JPEG读写二进制实现,baseline
 注意：在ubuntu 16.04(Linux 4.4) 下运行GIMP图片处理，导出为jpg格式，质量随便选
@@ -223,18 +223,17 @@ class JPG(object):
 		f.write(HEADER_SOS)
 		# 偷懒了，直接使用别的文件二进制
 		f.write('\x00\x08\x01\x01\x00\x00\x3F\x00')
-		hex_include_ff = jpeg_code.jpeg_encode(self.matrix)
-		l = len(hex_include_ff)
+		self.hex = jpeg_code.jpeg_encode(self.matrix)
+		l = len(self.hex)
 		binary = ''
 		index = 0
 		# 写入转义\xff\x00
 		while index < l:
-			this_byte = hex_include_ff[index:index + 2].decode('hex')
+			this_byte = self.hex[index:index + 2].decode('hex')
 			binary += this_byte
 			if this_byte == '\xff':
 				binary += '\x00'
 			index += 2
-			
 		f.write(binary)
 		
 # 实现灰度图像jpg文件的对烤
