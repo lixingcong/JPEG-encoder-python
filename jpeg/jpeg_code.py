@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < jpeg_code.py 2016-05-16 15:25:16 >
+# Time-stamp: < jpeg_code.py 2016-05-16 15:33:27 >
 """
 JPEG编码
 """
@@ -98,6 +98,8 @@ def jpeg_decode(input_hex, width, height, quantize_table=True):
 	merged_matrix = block_split.merge_blocks(decoded_blocks, rows, columns)
 	# 移除多余的边缘像素
 	final_matrix = block_split.remove_dummy_edge(merged_matrix, width, height)
+	# 转为八位数据类型
+	final_matrix = final_matrix.astype(np.uint8, copy=False)
 	return final_matrix
 
 
@@ -217,7 +219,6 @@ def test5():
 
 	for i in blocks_spilted:
 		print i, "\n----"
-	exit(0)
 
 	# 合并前计算padded尺寸
 	width_padded, height_padded = block_split.calc_new_size(width, height)
@@ -234,7 +235,7 @@ def test5():
 	
 if __name__ == "__main__":
 	# test1()
-	test2()
+	# test2()
 	# test3()
 	# test4()
-	# test5()
+	test5()
