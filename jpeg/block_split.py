@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < block_split.py 2016-05-11 23:19:18 >
+# Time-stamp: < block_split.py 2016-05-16 15:24:55 >
 """
 块分割
 """
@@ -53,17 +53,20 @@ def split_to_blocks(input_matrix, blk_width = 8):
 	print "new matrix created: width:%d height:%d" % (width, height)
 
 	# 图像块的数目
-	horizontal_blocks_num = height / blk_width
-	vertical_blocks_num = width / blk_width
+	# 水平
+	horizontal_blocks_num = width / blk_width
+	# 垂直
+	vertical_blocks_num = height / blk_width
 
 	print "split to: rows:%d columns:%d" % (horizontal_blocks_num, vertical_blocks_num)
 
 	all_small_blocks = []
-	# 先横向分割，再纵向分割
-	vertical_blocks = np.hsplit(input_matrix, vertical_blocks_num)
-	for block_vert in vertical_blocks:
-		horizontal_blocks = np.vsplit(block_vert, horizontal_blocks_num)
-		for block in horizontal_blocks:
+	# 先横向分割成很多行，再纵向分割成很多列
+	vertical_blocks = np.vsplit(input_matrix, vertical_blocks_num)#hsplit是水平切刀方向
+
+	for block_ver in vertical_blocks:
+		hor_blocks = np.hsplit(block_ver,horizontal_blocks_num)
+		for block in hor_blocks:
 			all_small_blocks.append(block)
 
 	return all_small_blocks, horizontal_blocks_num, vertical_blocks_num
@@ -156,33 +159,76 @@ def test():
 # 测试合并矩阵
 def test1():
 	test_table1 = np.array([
-		[139, 144, 149, 153, 155, 155, 155, 155, 155],
-		[144, 151, 153, 156, 159, 156, 156, 156, 155],
-		[150, 155, 160, 163, 158, 156, 156, 156, 155],
-		[159, 161, 162, 160, 160, 159, 159, 159, 155],
-		[159, 160, 161, 162, 162, 155, 155, 155, 155],
-		[161, 161, 161, 161, 160, 157, 157, 157, 155],
-		[162, 162, 161, 163, 162, 157, 157, 157, 155]
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255], 
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255]
 	])
 	test_table2 = np.array([
-		[1, 1, 149, 153, 155, 155, 155, 155, 155],
-		[1, 1, 153, 156, 159, 156, 156, 156, 155],
-		[1, 1, 160, 163, 158, 156, 156, 156, 155],
-		[1, 1, 162, 160, 160, 159, 159, 159, 155],
-		[1, 1, 161, 162, 162, 155, 155, 155, 155],
-		[1, 1, 161, 161, 160, 157, 157, 157, 155],
-		[1, 1, 161, 163, 162, 157, 157, 157, 155]
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255], 
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255]
 	])
-	test_list = [test_table1, test_table2]
+	test_table3 = np.array([
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255], 
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255]
+	])
+	test_table4 = np.array([
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255], 
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255]
+	])
+	test_table5 = np.array([
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255], 
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255]
+	])
+	test_table6 = np.array([
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255], 
+		[0, 255, 255, 255, 255, 255, 255, 255],
+		[0, 255, 255, 255, 255, 255, 255, 255]
+	])
+	test_list = [test_table1, test_table2, test_table3, test_table4, test_table5, test_table6]
 	# 合并矩阵
-	print "merge to 2x1"
-	print merge_blocks(test_list, 1, 2)
+	# print "merge to 3x1"
+	print merge_blocks(test_list, 3, 2)
 	print "##" * 46
-	print "merge to 1x2"
-	print merge_blocks(test_list, 2, 1)
+	# print "merge to 1x2"
+	merged = merge_blocks(test_list, 2, 3)
+	print merged
 	# 移除dummpy块
-	print remove_dummy_edge(test_table1, 6, 6)
+	print remove_dummy_edge(merged, 12, 12)
 
 if __name__ == '__main__':
-	test()
-	# test1()
+	# test()
+	test1()
