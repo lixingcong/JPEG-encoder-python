@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < quantize.py 2016-05-16 15:33:48 >
+# Time-stamp: < quantize.py 2016-05-16 15:55:06 >
 """
 量化
 """
@@ -25,18 +25,18 @@ chrominance_table = np.array([
 	[72, 92, 95, 98, 112, 100, 103, 99]
 ])
 # 亮度量化矩阵，灰度使用全1的矩阵
-# luminance_table = np.ones(64).reshape(8,8)
+luminance_table = np.ones(64).reshape(8,8)
 # 亮度量化矩阵，课本P125
-luminance_table = np.array([
-	[17, 18, 24, 47, 99, 99, 99, 99],
-	[18, 21, 26, 66, 99, 99, 99, 99],
-	[24, 26, 56, 99, 99, 99, 99, 99],
-	[47, 66, 99, 99, 99, 99, 99, 99],
-	[99, 99, 99, 99, 99, 99, 99, 99],
-	[99, 99, 99, 99, 99, 99, 99, 99],
-	[99, 99, 99, 99, 99, 99, 99, 99],
-	[99, 99, 99, 99, 99, 99, 99, 99],
-])
+# luminance_table = np.array([
+# 	[17, 18, 24, 47, 99, 99, 99, 99],
+# 	[18, 21, 26, 66, 99, 99, 99, 99],
+# 	[24, 26, 56, 99, 99, 99, 99, 99],
+# 	[47, 66, 99, 99, 99, 99, 99, 99],
+# 	[99, 99, 99, 99, 99, 99, 99, 99],
+# 	[99, 99, 99, 99, 99, 99, 99, 99],
+# 	[99, 99, 99, 99, 99, 99, 99, 99],
+# 	[99, 99, 99, 99, 99, 99, 99, 99],
+# ])
 
 def get_quantisation(input_matrix, table_name = LUMINANCE, direction = FORWARD):
 	global chrominance_table, luminance_table, output_table

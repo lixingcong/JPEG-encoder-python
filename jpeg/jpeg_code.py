@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < jpeg_code.py 2016-05-16 15:33:27 >
+# Time-stamp: < jpeg_code.py 2016-05-16 15:36:14 >
 """
 JPEG编码
 """
@@ -234,8 +234,8 @@ def test5():
 	my_pic2.write_bmp()
 	
 if __name__ == "__main__":
-	# test1()
+	test1()
 	# test2()
 	# test3()
 	# test4()
-	test5()
+	# test5()

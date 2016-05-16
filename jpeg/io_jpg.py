@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_jpg.py 2016-05-15 16:27:13 >
+# Time-stamp: < io_jpg.py 2016-05-16 16:45:19 >
 """
 JPEG读写二进制实现
 """
@@ -8,6 +8,7 @@ JPEG读写二进制实现
 import numpy as np
 import struct
 import zig_zag_scan
+import jpeg_code
 
 # JPEG固定文件头数据
 
@@ -21,6 +22,9 @@ HEADER_EOC = '\xff\xd9'
 
 HEADER_DHT_DC = '\x00\x1f\x00\x00\x01\x05\x01\x01\x01\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b'
 HEADER_DHT_AC = '\x00\xb5\x10\x00\x02\x01\x03\x03\x02\x04\x03\x05\x05\x04\x04\x00\x00\x01\x7d\x01\x02\x03\x00\x04\x11\x05\x12\x21\x31\x41\x06\x13\x51\x61\x07\x22\x71\x14\x32\x81\x91\xa1\x08\x23\x42\xb1\xc1\x15\x52\xd1\xf0\x24\x33\x62\x72\x82\x09\x0a\x16\x17\x18\x19\x1a\x25\x26\x27\x28\x29\x2a\x34\x35\x36\x37\x38\x39\x3a\x43\x44\x45\x46\x47\x48\x49\x4a\x53\x54\x55\x56\x57\x58\x59\x5a\x63\x64\x65\x66\x67\x68\x69\x6a\x73\x74\x75\x76\x77\x78\x79\x7a\x83\x84\x85\x86\x87\x88\x89\x8a\x92\x93\x94\x95\x96\x97\x98\x99\x9a\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa'
+HEADER_APP0_DATA = '\x00\x10\x4A\x46\x49\x46\x00\x01\x01\x01\x00\x01\x00\x01\x00\x00'
+HEADER_DQT_DATA = '\x00\x43\x00\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01\x01'
+
 
 class JPG(object):
 	def __init__(self, filelocation, input_matrix = None):
@@ -42,7 +46,6 @@ class JPG(object):
 			'SOS': None,
 			'EOC': None
 		}
-		self.hex = ''
 		self.DQT = {}
 		self.colors = {}
 		# self.DHT = {}
@@ -146,6 +149,7 @@ class JPG(object):
 
 	def read_SOS(self, f):
 		f.seek(self.offset_dict['SOS'] + 2)
+		buffer_hex = ''
 		# 灰度图直接省略读取颜色分量
 		length = struct.unpack('>H', f.read(2))[0]
 		f.seek(length - 2, 1)
@@ -160,11 +164,9 @@ class JPG(object):
 					ff_counter += 1
 				elif  buffer == '\xd9':
 					break
-			self.hex += buffer.encode('hex')
+			buffer_hex += buffer.encode('hex')
 		print "  0xff00 meets %d times" % ff_counter
-		with open('/tmp/jpg_bin.bin','w') as ee:
-			ee.write((self.hex).decode('hex'))
-		# print self.hex
+		self.matrix = jpeg_code.jpeg_decode(buffer_hex, self.width, self.height, self.DQT[0])
 
 	def read_data(self):
 		with open(self.filelocation, 'rb') as f:
@@ -175,38 +177,82 @@ class JPG(object):
 			self.read_SOS(f)
 
 	def get_data(self):
-		return (self.hex, self.width, self.height, self.DQT)
+		return (self.matrix, self.width, self.height, self.DQT)
 
 	# ------------------------------
-
-	def write(self):
-		pass
-
-	def write_APP0(self):
-		pass
-
-	def write_DQT(self):
-		pass
-
-	def write_SOF0(self):
-		pass
-
-	def write_DHT(self):
-		pass
-
-	def write_SOS(self):
-		pass
-
-	def write_compressed_bin(self):
-		pass
-
 	def write_data(self):
-		pass
+		with open(self.filelocation, 'wb') as f:
+			f.write('\xff\xd8')
+			self.write_APP0(f)
+			self.write_DQT(f)
+			self.write_SOF0(f)
+			self.write_DHT(f)
+			self.write_SOS(f)
+			f.write(HEADER_EOC)
+			
+	def write_APP0(self, f):
+		f.write(HEADER_APP0)
+		f.write(HEADER_APP0_DATA)
+
+	def write_DQT(self, f):
+		f.write(HEADER_DQT)
+		f.write(HEADER_DQT_DATA)
+			
+
+	def write_SOF0(self, f):
+		f.write(HEADER_SOF0)
+		data = ['\x00\x0B\x08', '\x01\x01\x11\x00']
+		width = struct.pack('>H', self.width)
+		height = struct.pack('>H', self.height)
+		f.write(data[0] + height + width + data[1])
+
+	def write_DHT(self, f):
+		# DC表 lenght=31
+		f.write(HEADER_DHT)
+		f.write(HEADER_DHT_DC)
+		# AC表 lenght=181
+		f.write(HEADER_DHT)
+		f.write(HEADER_DHT_AC)
+		
+	def write_SOS(self, f):
+		f.write(HEADER_SOS)
+		f.write('\x00\x08\x01\x01\x00\x00\x3F\x00')
+		hex_include_ff = jpeg_code.jpeg_encode(self.matrix)
+
+		l = len(hex_include_ff)
+		binary = ''
+		index = 0
+		while index < l:
+			this_byte = hex_include_ff[index:index + 2].decode('hex')
+			binary += this_byte
+			if this_byte == '\xff':
+				binary += '\x00'
+			index += 2
+			
+		f.write(binary)
+		
 
 def test():
-	my_pic1 = JPG('/tmp/wbt.jpg')
-	my_pic1.read_data()
 
+	my_pic1 = JPG('/tmp/test_jpg_formpy.jpg')
+	my_pic1.read_data()
+	matrix = my_pic1.get_data()[0]
+	print matrix
+	
+	exit(0)
+
+	matrix = np.array([
+		[255, 255, 255, 255, 0, 0, 0, 0],
+		[255, 255, 255, 255, 0, 0, 0, 0],
+		[255, 255, 255, 255, 0, 0, 0, 0],
+		[255, 255, 255, 255, 0, 0, 0, 0],
+		[255, 255, 255, 255, 0, 0, 0, 0],
+		[255, 255, 255, 255, 0, 0, 0, 0],
+		[255, 255, 255, 255, 0, 0, 0, 0],
+		[255, 255, 255, 255, 0, 0, 0, 0]
+	])
+	my_pic1 = JPG('/tmp/test_jpg_formpy.jpg', matrix)
+	my_pic1.write_data()
 
 if __name__ == '__main__':
 	test()
