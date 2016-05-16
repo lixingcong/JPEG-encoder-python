@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-15 19:59:56 >
+# Time-stamp: < entropy_encode.py 2016-05-16 14:51:10 >
 """
 熵编码
 """
@@ -411,10 +411,14 @@ def calc_amplitude(input_num, need_bit, mode = AC_MODE, direction = FORWARD):
 
 # 熵编码
 # 输入一组包含多个Block的RLE码流，例如[[(2,3),(3,4)...],[(00,),(2,3)...]]输出[('100','00')...]
-def get_entropy_encode(input_list):
+def get_entropy_encode(input_list, is_debug=False):
 	output_list = []
 	# 对每个block进行编码
+	block_num = 1
 	for each_block in input_list:
+		if is_debug:
+			print "get entropy encode: block #%d" % block_num
+			block_num += 1
 		# DC 编码，每个block的第一个元素是DC
 		dc_bit = each_block[0][0]
 		# 长度为1，即为dc00
@@ -426,6 +430,7 @@ def get_entropy_encode(input_list):
 		else:
 			dc_bit = huffman_DC_luminance_table_forward[dc_bit]
 			insert_item = (dc_bit,)
+		if is_debug:print "DC:", insert_item
 		output_list.append(insert_item)
 
 		# AC 编码
@@ -457,12 +462,13 @@ def get_entropy_encode(input_list):
 				coefficient = huffman_AC_luminance_table_forward[position_in_huffman_table]
 				insert_item = (coefficient, ac_amp)
 				output_list.append(insert_item)
+			if is_debug:print "AC:", insert_item
 
 	return output_list
 
 # 二进制编码
 # 输入一个列表[('100','00')...],该列表是所有block的组合，不分block，输出码流类似'ffab3324'，
-def get_encoded_to_hex(input_list):
+def get_encoded_to_hex(input_list, is_debug=False):
 	output_bin = ''
 	buffer = ''
 	# 逐位拼接
@@ -478,16 +484,16 @@ def get_encoded_to_hex(input_list):
 			# 注意保留前导的0，使用0b1作为前导再去掉
 			this_hex = (hex(int('0b1' + buffer, 2)))[3:]
 			output_bin += (this_hex[:-1] if this_hex[-1] == 'L' else this_hex)
+			if is_debug:print buffer
 			buffer = ''
 
 	# 剩余位的处理方法
 	l = len(buffer)
-	if (l % 8) != 0:
+	if (l % 8) != 0 and l != 0:
 		buffer += ('1' * (8 - (l % 8)))
-		# 剩余位转hex
-		if len(buffer) != 0:
-			this_hex = (hex(int('0b1' + buffer, 2)))[3:]
-			output_bin += (this_hex[:-1] if this_hex[-1] == "L" else this_hex)
+		if is_debug:print buffer
+		this_hex = (hex(int('0b1' + buffer, 2)))[3:]
+		output_bin += (this_hex[:-1] if this_hex[-1] == "L" else this_hex)
 	# print final_result
 	# print bin(int('1' + final_result, 16))[3:]
 	return output_bin
@@ -801,6 +807,7 @@ def test2():
 	print final
 
 	print "len of original:", len(test_hex), "\nlen of final:", len(final)
+
 
 
 if __name__ == '__main__':
