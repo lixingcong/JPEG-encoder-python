@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_jpg.py 2016-05-16 16:45:19 >
+# Time-stamp: < io_jpg.py 2016-05-16 17:00:41 >
 """
-JPEG读写二进制实现
+JPEG读写二进制实现,baseline
+注意：在ubuntu 16.04(Linux 4.4) 下运行GIMP图片处理，导出为jpg格式，质量随便选
+但是，高级选项，取消勾选“优化”、“渐进”、“缩略图”等所有选项！！否则不兼容
 """
 
 import numpy as np
@@ -30,6 +32,7 @@ class JPG(object):
 	def __init__(self, filelocation, input_matrix = None):
 		self.filelocation = filelocation
 		self.matrix = input_matrix
+		self.hex = ''
 		if self.matrix is not None:
 			self.height = self.matrix.shape[0]
 			self.width = self.matrix.shape[1]
@@ -149,7 +152,6 @@ class JPG(object):
 
 	def read_SOS(self, f):
 		f.seek(self.offset_dict['SOS'] + 2)
-		buffer_hex = ''
 		# 灰度图直接省略读取颜色分量
 		length = struct.unpack('>H', f.read(2))[0]
 		f.seek(length - 2, 1)
@@ -164,9 +166,9 @@ class JPG(object):
 					ff_counter += 1
 				elif  buffer == '\xd9':
 					break
-			buffer_hex += buffer.encode('hex')
+			self.hex += buffer.encode('hex')
 		print "  0xff00 meets %d times" % ff_counter
-		self.matrix = jpeg_code.jpeg_decode(buffer_hex, self.width, self.height, self.DQT[0])
+		self.matrix = jpeg_code.jpeg_decode(self.hex, self.width, self.height, self.DQT[0])
 
 	def read_data(self):
 		with open(self.filelocation, 'rb') as f:
@@ -178,6 +180,9 @@ class JPG(object):
 
 	def get_data(self):
 		return (self.matrix, self.width, self.height, self.DQT)
+
+	def get_hex(self):
+		return self.hex
 
 	# ------------------------------
 	def write_data(self):
@@ -216,12 +221,13 @@ class JPG(object):
 		
 	def write_SOS(self, f):
 		f.write(HEADER_SOS)
+		# 偷懒了，直接使用别的文件二进制
 		f.write('\x00\x08\x01\x01\x00\x00\x3F\x00')
 		hex_include_ff = jpeg_code.jpeg_encode(self.matrix)
-
 		l = len(hex_include_ff)
 		binary = ''
 		index = 0
+		# 写入转义\xff\x00
 		while index < l:
 			this_byte = hex_include_ff[index:index + 2].decode('hex')
 			binary += this_byte
@@ -231,26 +237,13 @@ class JPG(object):
 			
 		f.write(binary)
 		
-
+# 实现灰度图像jpg文件的对烤
 def test():
-
-	my_pic1 = JPG('/tmp/test_jpg_formpy.jpg')
+	my_pic1 = JPG('/tmp/43.jpg')
 	my_pic1.read_data()
 	matrix = my_pic1.get_data()[0]
-	print matrix
-	
-	exit(0)
 
-	matrix = np.array([
-		[255, 255, 255, 255, 0, 0, 0, 0],
-		[255, 255, 255, 255, 0, 0, 0, 0],
-		[255, 255, 255, 255, 0, 0, 0, 0],
-		[255, 255, 255, 255, 0, 0, 0, 0],
-		[255, 255, 255, 255, 0, 0, 0, 0],
-		[255, 255, 255, 255, 0, 0, 0, 0],
-		[255, 255, 255, 255, 0, 0, 0, 0],
-		[255, 255, 255, 255, 0, 0, 0, 0]
-	])
+	print "\n\nencode a jpg"
 	my_pic1 = JPG('/tmp/test_jpg_formpy.jpg', matrix)
 	my_pic1.write_data()
 

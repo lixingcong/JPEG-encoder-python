@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < dc_ac_encode.py 2016-05-15 22:27:04 >
+# Time-stamp: < dc_ac_encode.py 2016-05-16 17:14:36 >
 """
 DC AC系数的编码
 """
@@ -118,9 +118,8 @@ def DC_AC_decode(input_list, previous_DC_value):
 		output_list.append(0)
 	return output_list
 
-
+# 课本P129 "量化矩阵"转化为1x64列表
 def test():
-	# 测试矩阵，课本P129 "量化矩阵"转化为1x64列表
 	test_list = [15, 0, -2, -1, -1, -1, 0, 0, -1]
 	# 补零至长度64
 	for i in xrange(55):test_list.append(0)

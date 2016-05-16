@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < entropy_encode.py 2016-05-16 14:51:10 >
+# Time-stamp: < entropy_encode.py 2016-05-16 17:11:14 >
 """
 熵编码
 """
@@ -600,6 +600,7 @@ def get_entropy_decode(input_list, is_debug=False):
 def get_decoded_from_hex(input_string, is_debug = False):
 	# 替换FF00为FF的步骤不应该在本函数内实现，应交给IO读写实现
 	# input_string_new = input_string.replace('FF00', 'FF')
+	print input_string[:16]
 	buffer = bin(int('1' + input_string, 16))[3:]
 	output_list = []
 	len_buffer = len(buffer)

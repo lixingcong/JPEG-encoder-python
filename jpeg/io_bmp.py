@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# Time-stamp: < io_bmp.py 2016-05-15 16:05:35 >
+# Time-stamp: < io_bmp.py 2016-05-16 17:02:13 >
 """
-读写bmp文件
+读写灰度bmp文件
+注意：在ubuntu 16.04(Linux 4.4) 下运行GIMP图片处理，导出为bmp格式：取消“行程编码RLE”，高级选项要“请勿写入颜色空间信息”
 """
 
 import numpy as np
@@ -103,7 +104,7 @@ class BMP(object):
 		return (self.matrix, self.height, self.width)
 
 	# 简易读取bmp，仅实现了灰度图像读取
-	def read_bmp(self):
+	def read_data(self):
 		with open(self.filelocation, 'rb') as f:
 			self.read_header(f)
 			f.seek(self.data_offset)
@@ -114,7 +115,7 @@ class BMP(object):
 				f.seek(self.padding_bytes_each_line, 1)
 
 	# 简易写入bmp，仅实现了灰度图像写入
-	def write_bmp(self):
+	def write_data(self):
 		with open(self.filelocation, 'wb') as f:
 			self.write_header(f)
 			# 写入二进制数据
@@ -135,12 +136,12 @@ def test():
 	# 测试图像对拷
 	print "-" * 10
 	my_pic1 = BMP('data/color.bmp')
-	my_pic1.read_bmp()
+	my_pic1.read_data()
 	print "read data/color.bmp ok!"
 	matrix = my_pic1.get_data()[0]
 
 	my_pic2 = BMP('/tmp/color_copy.bmp', matrix)
-	my_pic2.write_bmp()
+	my_pic2.write_data()
 	print "write /tmp/color_copy.bmp ok!"
 	del matrix
 
@@ -156,19 +157,19 @@ def test():
 		[255, 255, 255, 255, 255, 0, 0, 255]
 	])
 	my_pic3 = BMP('/tmp/8x7.bmp', matrix_gray)
-	my_pic3.write_bmp()
+	my_pic3.write_data()
 	print "write /tmp/8x7.bmp ok!"
 
 	# 测试自定义图像
 	print "-" * 10
 	matrix_my = np.array([[135, 135, 188, 188, 188, 187, 189, 191], [134, 125, 189, 189, 191, 191, 194, 196], [156, 156, 193, 193, 195, 196, 200, 200], [193, 195, 197, 198, 201, 202, 205, 207], [197, 199, 201, 204, 205, 207, 209, 210], [203, 205, 206, 208, 211, 212, 215, 216], [208, 209, 212, 214, 216, 218, 220, 221], [213, 214, 217, 219, 221, 223, 225, 227], [218, 219, 222, 222, 227, 226, 230, 164], [222, 227, 223, 232, 226, 236, 231, 102], [230, 226, 237, 227, 241, 232, 164, 66], [233, 238, 232, 245, 233, 248, 56, 56], [239, 236, 248, 236, 252, 197, 48, 46], [242, 248, 242, 255, 245, 55, 55, 38], [246, 216, 194, 176, 72, 61, 37, 36], [150, 97, 146, 140, 60, 42, 36, 42]])
 	my_pic4 = BMP('/tmp/my.bmp', matrix_my)
-	my_pic4.write_bmp()
+	my_pic4.write_data()
 	print "write /tmp/my.bmp ok!"
 
 def test2():
 	my_pic = BMP('/tmp/43.bmp')
-	my_pic.read_bmp()
+	my_pic.read_data()
 	m, height, width = my_pic.get_data()
 
 	print "q to quit, color query"
@@ -186,8 +187,8 @@ def test2():
 				f.write(' ')
 			f.write('\n')
 if __name__ == '__main__':
-	test2()
-	# test()
+	# test2()
+	test()
 
 
 
